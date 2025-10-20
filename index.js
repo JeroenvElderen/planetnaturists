@@ -1,10 +1,17 @@
 // index.js
 const fs = require('fs');
+const express = require('express');
 const { Client, GatewayIntentBits, Partials, REST, Routes } = require('discord.js');
 require('dotenv').config();
 
 const { countries } = require('./countries');
-const createCountryRoles = require('./commands/createCountryRoles'); // slash command file
+const createCountryRoles = require('./commands/createCountryRoles');
+
+// 🌐 Keep Render service alive (for free hosting)
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => res.send('✅ PlanetNaturists bot is alive! 🌍'));
+app.listen(PORT, () => console.log(`🌐 Express keep-alive running on port ${PORT}`));
 
 // 🧠 Load emoji → role ID map (auto-updated by /create-country-roles)
 let emojiRoleMap = {};
@@ -32,17 +39,17 @@ client.once('clientReady', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 });
 
-// 🧾 Reaction message and channel IDs (update these for your setup)
+// 🧾 Reaction message and channel IDs
 const MESSAGE_ID = '1429841307538423838';
 const CHANNEL_ID = '1429840375387914311';
 
-// ✨ Register slash command for your guild (instant registration)
+// ✨ Register slash command for your guild
 const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
 (async () => {
   try {
     console.log('🔁 Registering guild slash commands...');
     await rest.put(
-      Routes.applicationGuildCommands(process.env.CLIENT_ID, '1408151481009311845'), // your server ID
+      Routes.applicationGuildCommands(process.env.CLIENT_ID, '1408151481009311845'), // your guild ID
       { body: [createCountryRoles.data.toJSON()] }
     );
     console.log('✅ Slash command registered for guild!');
@@ -57,7 +64,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
   try {
     if (reaction.partial) await reaction.fetch();
     if (reaction.message.partial) await reaction.message.fetch();
-
     if (reaction.message.id !== MESSAGE_ID || reaction.message.channel.id !== CHANNEL_ID) return;
 
     const emoji = reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name;
@@ -82,7 +88,6 @@ client.on('messageReactionRemove', async (reaction, user) => {
   try {
     if (reaction.partial) await reaction.fetch();
     if (reaction.message.partial) await reaction.message.fetch();
-
     if (reaction.message.id !== MESSAGE_ID || reaction.message.channel.id !== CHANNEL_ID) return;
 
     const emoji = reaction.emoji.id ? reaction.emoji.id : reaction.emoji.name;
@@ -106,8 +111,7 @@ client.on('interactionCreate', async (interaction) => {
   if (!interaction.isCommand()) return;
   if (interaction.commandName === 'create-country-roles') {
     await createCountryRoles.execute(interaction);
-
-    // After creating roles, reload the new emojiRoleMap
+    // Reload updated emojiRoleMap
     if (fs.existsSync('./emojiRoleMap.json')) {
       emojiRoleMap = JSON.parse(fs.readFileSync('./emojiRoleMap.json'));
       console.log(`🔁 Reloaded emojiRoleMap.json (${Object.keys(emojiRoleMap).length} entries)`);

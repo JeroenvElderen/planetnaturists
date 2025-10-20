@@ -6,11 +6,16 @@
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": ["discord", "bot", "roles"],
+  "keywords": [
+    "discord",
+    "bot",
+    "roles"
+  ],
   "author": "Jeroen",
   "license": "ISC",
   "dependencies": {
     "discord.js": "^14.23.2",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0"
   }
 }

@@ -278,7 +278,7 @@ client.on('channelUpdate', async (oldChannel, newChannel) => {
   } catch (err) {
     console.error('❌ Error handling closed ticket:', err);
   }
-});
+}); 
 
 // ✅ Start bot
 client.login(process.env.TOKEN);

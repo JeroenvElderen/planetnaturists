@@ -7,6 +7,19 @@ require('dotenv').config();
 const { countries } = require('./countries');
 const createCountryRoles = require('./commands/createCountryRoles');
 
+// 🎟️ Ticket configuration
+const TICKET_CONFIG = {
+  requestVerification: {
+    parentChannelId: '1427675870394449930', // #request-verification
+    targetCategoryId: '1427685018746097805', // Verification Tickets
+  },
+  support: {
+    parentChannelId: '1427650123604820038', // #support
+    targetCategoryId: '1429876070894534826', // Support Tickets
+  },
+  closedCategoryId: '1428718337239678996', // Closed Tickets
+};
+
 // 🌐 Keep Render service alive (for free hosting)
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +42,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildModeration,
     GatewayIntentBits.MessageContent,
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
@@ -116,6 +130,153 @@ client.on('interactionCreate', async (interaction) => {
       emojiRoleMap = JSON.parse(fs.readFileSync('./emojiRoleMap.json'));
       console.log(`🔁 Reloaded emojiRoleMap.json (${Object.keys(emojiRoleMap).length} entries)`);
     }
+  }
+});
+
+// 🆕 Detect new ticket channel creation
+client.on('channelCreate', async (channel) => {
+  try {
+    if (!channel.guild || channel.type !== 0) return;
+    console.log(`🧩 New channel created: ${channel.name} | parent=${channel.parentId}`);
+
+    // Wait longer — Ticket Tool may take a few seconds to finish setup
+    await new Promise(res => setTimeout(res, 7000));
+
+    // Fetch last 20 messages for analysis
+    const messages = await channel.messages.fetch({ limit: 20 }).catch(() => null);
+    let type = 'support';
+
+    if (messages && messages.size > 0) {
+      const joinedText = Array.from(messages.values())
+        .map(m => (m.content + ' ' + m.author.username).toLowerCase())
+        .join(' ');
+
+      if (joinedText.includes('verification') || joinedText.includes('verify')) {
+        type = 'verification';
+      }
+    }
+
+    console.log(`📩 Detected new ${type} ticket: ${channel.name}`);
+    await handleNewTicket(channel, type);
+
+  } catch (err) {
+    console.error('❌ Error handling new ticket:', err);
+  }
+});
+
+// 🧩 Handle ticket rename + move
+async function handleNewTicket(channel, type) {
+  try {
+    const guild = channel.guild;
+    console.log(`⚙️ Handling ${type} ticket ${channel.name}`);
+
+    // Wait again to ensure Ticket Tool message & mention are loaded
+    await new Promise(res => setTimeout(res, 3000));
+
+    const messages = await channel.messages.fetch({ limit: 20 }).catch(() => null);
+    let username = 'unknown-user';
+
+    if (messages && messages.size > 0) {
+      // ✅ 1. Try to find the Ticket Tool message that mentions the user
+      const ticketToolMsg = [...messages.values()].find(
+        m => m.author.bot && m.content.includes('<@')
+      );
+
+      if (ticketToolMsg) {
+        const mentionMatch = ticketToolMsg.content.match(/<@!?(\d+)>/);
+        if (mentionMatch) {
+          const userId = mentionMatch[1];
+          const member = await guild.members.fetch(userId).catch(() => null);
+          if (member) {
+            username = member.user.username.toLowerCase();
+            console.log(`👤 Ticket opener found via mention: ${username}`);
+          }
+        }
+      }
+
+      // ✅ 2. If not found, fallback to first human message
+      if (username === 'unknown-user') {
+        const firstUserMsg = [...messages.values()].reverse().find(m => !m.author.bot);
+        if (firstUserMsg) {
+          username = firstUserMsg.author.username.toLowerCase();
+          console.log(`👤 Fallback to first human message: ${username}`);
+        }
+      }
+    }
+
+    // ✅ If still not found, name it by default ticket number (e.g., ticket-0016)
+    if (username === 'unknown-user') {
+      username = channel.name.replace('ticket-', '');
+    }
+
+    // Rename channel
+    await channel.setName(username);
+    console.log(`✏️ Renamed ${type} ticket to ${username}`);
+
+    // Move to correct category
+    const categoryId =
+      type === 'verification'
+        ? TICKET_CONFIG.requestVerification.targetCategoryId
+        : TICKET_CONFIG.support.targetCategoryId;
+
+    await channel.setParent(categoryId, { lockPermissions: false });
+    console.log(`📂 Moved ${username}'s ${type} ticket to ${guild.channels.cache.get(categoryId)?.name}`);
+  } catch (err) {
+    console.error('❌ Error renaming/moving ticket:', err);
+  }
+}
+
+// 🏁 Detect when a ticket is closed, rename it, and move to Closed Tickets
+client.on('channelUpdate', async (oldChannel, newChannel) => {
+  try {
+    // Only handle text channels
+    if (!newChannel.guild || newChannel.type !== 0) return;
+
+    const name = newChannel.name.toLowerCase();
+
+    // Only trigger if it contains "closed"
+    if (!name.includes('closed')) return;
+
+    const guild = newChannel.guild;
+
+    // Determine type based on the old parent
+    let type = 'support';
+    if (oldChannel.parentId === TICKET_CONFIG.requestVerification.targetCategoryId) {
+      type = 'verification';
+    }
+
+    // Extract username from the old name
+    let baseUsername = oldChannel.name
+      .replace(/^resolved-|^closed-|verification-|support-|ticket-|\W/g, '')
+      .trim();
+
+    if (!baseUsername || baseUsername.length < 2) baseUsername = 'unknown';
+
+    const newName = `resolved-${type}-${baseUsername}`;
+
+    // ✅ Rename only if not already renamed
+    if (newChannel.name !== newName) {
+      await newChannel.setName(newName);
+      console.log(`✏️ Renamed closed ${type} ticket to ${newName}`);
+    }
+
+    // ✅ Move to Closed Tickets category if not already there
+    if (newChannel.parentId !== TICKET_CONFIG.closedCategoryId) {
+      await newChannel.setParent(TICKET_CONFIG.closedCategoryId, { lockPermissions: true });
+      console.log(`📦 Moved closed ${type} ticket "${newName}" to Closed Tickets`);
+    }
+
+    // ✅ Optionally lock messages from everyone
+    const everyoneRole = guild.roles.everyone;
+    await newChannel.permissionOverwrites.edit(everyoneRole, {
+      SendMessages: false,
+      AddReactions: false,
+      CreatePublicThreads: false,
+      CreatePrivateThreads: false,
+    });
+
+  } catch (err) {
+    console.error('❌ Error handling closed ticket:', err);
   }
 });
 

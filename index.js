@@ -8,6 +8,7 @@ const { setupKeepAlive } = require("./handlers/keepAlive");
 const { registerSlashCommands } = require("./handlers/slashCommandHandler");
 const { handleReactionAdd, handleReactionRemove } = require("./handlers/reactionHandler");
 const { handleTicketCreate, handleTicketUpdate } = require("./handlers/ticketHandler");
+const { handleStoryMessage, resetStory } = require("./handlers/storyGameHandler"); // ✅ include resetStory
 
 // 🌐 Start Express keep-alive server
 setupKeepAlive();
@@ -36,9 +37,24 @@ client.once("ready", async () => {
   await registerSlashCommands();
 });
 
+// 🌴 Naturist Story Game
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  // Handle story posts
+  await handleStoryMessage(message);
+
+  // Handle reset command
+  if (message.content === "!resetstory") {
+    await resetStory(message);
+  }
+});
+
+// 🌍 Role reactions + tickets
 client.on("messageReactionAdd", (r, u) => handleReactionAdd(r, u, emojiRoleMap));
 client.on("messageReactionRemove", (r, u) => handleReactionRemove(r, u, emojiRoleMap));
 client.on("channelCreate", handleTicketCreate);
 client.on("channelUpdate", handleTicketUpdate);
 
+// ✅ Start the bot
 client.login(process.env.TOKEN);

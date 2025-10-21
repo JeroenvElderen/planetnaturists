@@ -5,6 +5,9 @@ const countries = {
   '🇲🇽': 'Mexico',
   '🇧🇷': 'Brazil',
   '🇬🇧': 'United Kingdom',
+  ':england:': 'England',
+  ':scotland': 'Scotland',
+  ':wales:': 'Wales',
   '🇫🇷': 'France',
   '🇩🇪': 'Germany',
   '🇳🇱': 'Netherlands',
@@ -93,5 +96,16 @@ const countries = {
   '🇦🇲': 'Armenia',
   '🇦🇿': 'Azerbaijan',
 };
+
+const aliases = {
+  ':england:': '🇬🇧', // England → treat as UK
+  ':scotland:': '🇬🇧', // Scotland → treat as UK
+  ':wales:': '🇬🇧', // Wales → treat as UK
+};
+
+// Merge aliases into the main mapping
+for (const [alias, target] of Object.entries(aliases)) {
+  if (countries[target]) countries[alias] = countries[target];
+}
 
 module.exports = { countries };

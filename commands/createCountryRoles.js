@@ -1,6 +1,6 @@
 // commands/createCountryRoles.js
 const { SlashCommandBuilder } = require('discord.js');
-const { countries } = require('../countries');
+const { countries } = require('../data/countries');
 const fs = require('fs');
 
 module.exports = {

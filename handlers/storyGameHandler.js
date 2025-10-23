@@ -32,7 +32,9 @@ module.exports = {
     if (message.channel.id !== STORY_CHANNEL_ID) return;
     if (message.author.bot) return;
 
-    const content = message.content.trim();
+    const content = message.content
+        .trim()
+        .toLowerCase();
     const words = content.split(/\s+/);
 
     // Rule 1️⃣: Only 1–2 words allowed

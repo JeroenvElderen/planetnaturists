@@ -33,7 +33,38 @@ function saveStoryData(data) {
 let storyData = loadStoryData();
 let isProcessing = false;
 
+async function updateStoryEmbed(channel) {
+  const fullStory = storyData.story.join(" ");
+  const embed = {
+    title: "📜 The Naturist Story",
+    description: `> ${fullStory}`,
+    color: 0x2ecc71,
+    footer: { text: "Add your words to continue the naturist tale 🌞" },
+  };
+
+  try {
+    if (storyData.storyMessageId) {
+      const existingMsg = await channel.messages
+        .fetch(storyData.storyMessageId)
+        .catch(() => null);
+
+      if (existingMsg) {
+        await existingMsg.edit({ embeds: [embed] });
+        return;
+      }
+    }
+
+    // Send new message if previous one not found
+    const newMessage = await channel.send({ embeds: [embed] });
+    storyData.storyMessageId = newMessage.id;
+    saveStoryData(storyData);
+  } catch (err) {
+    console.error("❌ Error updating story embed:", err);
+  }
+}
+
 module.exports = {
+  // ✨ Handle each new story word
   async handleStoryMessage(message) {
     if (message.channel.id !== STORY_CHANNEL_ID) return;
     if (message.author.bot) return;
@@ -69,7 +100,7 @@ module.exports = {
         return;
       }
 
-      // ✅ Passed all checks — add the new words
+      // ✅ Passed all checks — add new words
       storyData.story.push(...words);
       if (storyData.story.length > MAX_HISTORY) {
         storyData.story = storyData.story.slice(-MAX_HISTORY);
@@ -77,42 +108,46 @@ module.exports = {
 
       storyData.lastUserId = message.author.id;
 
-      // 🧹 Delete the user’s message to keep the channel clean
+      // 🧹 Delete user's message to keep channel clean
       await message.delete().catch(() => {});
 
-      const fullStory = storyData.story.join(" ");
-      const embed = {
-        title: "📜 The Naturist Story",
-        description: `> ${fullStory}`,
-        color: 0x2ecc71,
-        footer: { text: "Add your words to continue the naturist tale 🌞" },
-      };
+      // 🌿 Update or send embed
+      await updateStoryEmbed(message.channel);
 
-      // 🪶 Remove old embed if exists
-      if (storyData.storyMessageId) {
-        const oldMsg = await message.channel.messages
-          .fetch(storyData.storyMessageId)
-          .catch(() => null);
-        if (oldMsg) await oldMsg.delete().catch(() => {});
-      }
-
-      // 🆕 Send new story embed
-      const newMessage = await message.channel.send({ embeds: [embed] });
-      storyData.storyMessageId = newMessage.id;
-
-      // 💾 Save story after every valid update
+      // 💾 Save story data
       saveStoryData(storyData);
 
       console.log(`🌴 Story updated by ${message.author.username}: "${content}"`);
     } catch (err) {
       console.error("❌ Error updating story message:", err);
     } finally {
-      // 🔓 Always release the lock
+      // 🔓 Always release lock
       isProcessing = false;
     }
   },
 
-  // 🔄 Reset command handler
+  // 🪄 Restore story after restart
+  async restoreStory(client) {
+    try {
+      const channel = await client.channels.fetch(STORY_CHANNEL_ID).catch(() => null);
+      if (!channel) {
+        console.warn("⚠️ Story channel not found during restore.");
+        return;
+      }
+
+      if (!storyData.story || storyData.story.length === 0) {
+        console.log("ℹ️ No existing story to restore.");
+        return;
+      }
+
+      console.log("🌿 Restoring naturist story after restart...");
+      await updateStoryEmbed(channel);
+    } catch (err) {
+      console.error("❌ Error restoring story:", err);
+    }
+  },
+
+  // 🔄 Reset story manually
   async resetStory(message) {
     if (!message.member.permissions.has("ManageGuild")) {
       return message.reply("🚫 You don't have permission to reset the story.");

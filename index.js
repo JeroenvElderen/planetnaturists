@@ -9,6 +9,10 @@ const { registerSlashCommands } = require("./handlers/slashCommandHandler");
 const { handleReactionAdd, handleReactionRemove } = require("./handlers/reactionHandler");
 const { handleTicketCreate, handleTicketUpdate } = require("./handlers/ticketHandler");
 const { handleStoryMessage, resetStory } = require("./handlers/storyGameHandler"); // ✅ include resetStory
+const {
+  initVideoRequestMessage,
+  handleInteraction: handleVideoInteraction
+} = require("./handlers/videoVerifyHandler");
 
 // 🌐 Start Express keep-alive server
 setupKeepAlive();
@@ -35,6 +39,8 @@ const client = new Client({
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   await registerSlashCommands();
+  await initVideoRequestMessage(client);
+
 });
 
 // 🌴 Naturist Story Game
@@ -55,6 +61,7 @@ client.on("messageReactionAdd", (r, u) => handleReactionAdd(r, u, emojiRoleMap))
 client.on("messageReactionRemove", (r, u) => handleReactionRemove(r, u, emojiRoleMap));
 client.on("channelCreate", handleTicketCreate);
 client.on("channelUpdate", handleTicketUpdate);
+client.on("interactionCreate", handleVideoInteraction);
 
 // ✅ Start the bot
 client.login(process.env.TOKEN);

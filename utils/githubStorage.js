@@ -23,34 +23,43 @@ async function readStory() {
   }
 }
 
-async function writeStory(data) {
-  const json = JSON.stringify(data, null, 2);
-  const contentEncoded = Buffer.from(json).toString("base64");
-
-  let sha = null;
+async function writeStory(data, retries = 3) {
   try {
+    // Always fetch the latest SHA before writing
     const res = await axios.get(BASE_URL, {
       headers: { Authorization: `token ${GITHUB_TOKEN}` },
     });
-    sha = res.data.sha;
-  } catch {}
+    const latestSha = res.data.sha;
 
-  await axios.put(
-    BASE_URL,
-    {
-      message: "Update naturist story",
-      content: contentEncoded,
-      sha: sha || undefined,
-    },
-    {
-      headers: {
-        Authorization: `token ${GITHUB_TOKEN}`,
-        "Content-Type": "application/json",
+    const json = JSON.stringify(data, null, 2);
+    const contentEncoded = Buffer.from(json).toString("base64");
+
+    await axios.put(
+      BASE_URL,
+      {
+        message: "Update naturist story",
+        content: contentEncoded,
+        sha: latestSha,
       },
-    }
-  );
+      {
+        headers: {
+          Authorization: `token ${GITHUB_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  console.log("☁️ Story synced to GitHub!");
+    console.log("☁️ Story synced to GitHub!");
+  } catch (err) {
+    // Retry a few times if there's a conflict
+    if (err.response?.status === 409 && retries > 0) {
+      console.warn("⚠️ GitHub sync conflict — retrying...");
+      await new Promise((res) => setTimeout(res, 1000)); // wait 1s
+      return writeStory(data, retries - 1);
+    }
+
+    console.error("❌ Failed to write story to GitHub:", err.message);
+  }
 }
 
 module.exports = { readStory, writeStory };

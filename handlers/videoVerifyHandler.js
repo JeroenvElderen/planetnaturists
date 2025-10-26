@@ -138,4 +138,5 @@ module.exports = {
       console.log(`📹 Verification ticket + voice channel created for ${member.user.tag}`);
     }
   },
-};
+}; 
+ 

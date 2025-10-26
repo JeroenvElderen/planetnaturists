@@ -1,5 +1,4 @@
-const fs = require("fs");
-const path = require("path");
+
 const {
   STORY_CHANNEL_ID,
   MIN_WORDS,
@@ -7,30 +6,13 @@ const {
   MAX_HISTORY,
 } = require("../config/storyGame");
 
-const STORY_FILE = path.join(__dirname, "../data/storyData.json");
+const { readStory, writeStory } = require("../utils/githubStorage");
 
-// 🧠 Load story data from file or create a new one
-function loadStoryData() {
-  try {
-    if (fs.existsSync(STORY_FILE)) {
-      return JSON.parse(fs.readFileSync(STORY_FILE, "utf8"));
-    }
-  } catch (err) {
-    console.error("⚠️ Error loading story data:", err);
-  }
-  return { story: [], lastUserId: null, storyMessageId: null };
-}
+let storyData = { story: [], lastUserId: null, storyMessageId: null };
+(async () => {
+  storyData = await readStory();
+})();
 
-// 💾 Save story data to file
-function saveStoryData(data) {
-  try {
-    fs.writeFileSync(STORY_FILE, JSON.stringify(data, null, 2), "utf8");
-  } catch (err) {
-    console.error("⚠️ Error saving story data:", err);
-  }
-}
-
-let storyData = loadStoryData();
 let isProcessing = false;
 
 module.exports = {
@@ -101,7 +83,7 @@ module.exports = {
       storyData.storyMessageId = newMessage.id;
 
       // 💾 Save story after every valid update
-      saveStoryData(storyData);
+      await writeStory(storyData);
 
       console.log(`🌴 Story updated by ${message.author.username}: "${content}"`);
     } catch (err) {
@@ -119,7 +101,7 @@ module.exports = {
     }
 
     storyData = { story: [], lastUserId: null, storyMessageId: null };
-    saveStoryData(storyData);
+    await writeStory(storyData);
 
     await message.channel.send("🧹 The naturist story has been reset! Start fresh 🌞");
   },

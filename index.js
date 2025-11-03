@@ -13,7 +13,10 @@ const {
   initVideoRequestMessage,
   handleInteraction: handleVideoInteraction,
 } = require("./handlers/videoVerifyHandler");
-const { postDailyWouldYouRather } = require("./handlers/dailyWouldYouRatherHandler"); // 🌴 New game handler
+
+// 🌴 Daily poll handlers
+const { postDailyWouldYouRather } = require("./handlers/dailyWouldYouRatherHandler");
+const { postDailyThisOrThat } = require("./handlers/dailyThisOrThatHandler");
 
 // 🧩 Slash command files
 const verifyVideo = require("./commands/verifyVideo");
@@ -47,15 +50,15 @@ client.once("ready", async () => {
   await registerSlashCommands();
   await initVideoRequestMessage(client);
 
-  // 🌴 Post the daily Would You Rather poll immediately
+  // 🌴 Post the daily polls immediately
   await postDailyWouldYouRather(client);
+  await postDailyThisOrThat(client);
 
-  // 🕒 Schedule a new poll every 24 hours (86,400,000 ms)
-  setInterval(() => {
-    postDailyWouldYouRather(client);
-  }, 24 * 60 * 60 * 1000);
+  // 🕒 Schedule new polls every 24 hours (86,400,000 ms)
+  setInterval(() => postDailyWouldYouRather(client), 24 * 60 * 60 * 1000);
+  setInterval(() => postDailyThisOrThat(client), 24 * 60 * 60 * 1000);
 
-  console.log("📆 Daily 'Would You Rather' scheduler started!");
+  console.log("📆 Daily 'Would You Rather' & 'This or That' scheduler started!");
 });
 
 // 🌴 Naturist Story Game

@@ -14,9 +14,12 @@
   "author": "Jeroen",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.12.2",
     "discord.js": "^14.23.2",
     "dotenv": "^17.2.3",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.7.0"
   }
 }

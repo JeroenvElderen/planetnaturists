@@ -16,15 +16,23 @@ module.exports = {
     const channel = await client.channels.fetch(REQUEST_CHANNEL_ID);
     if (!channel) return console.error("❌ Video request channel not found");
 
-    await channel.messages.fetch({ limit: 20 });
-    channel.bulkDelete(20).catch(() => {});
+    // 👇 Try to find an existing panel message
+    const messages = await channel.messages.fetch({ limit: 50 });
+    const existing = messages.find(
+      (m) => m.embeds?.[0]?.title === "📹 Video Verification Needed"
+    );
+
+    if (existing) {
+      console.log("✅ Video verification button already exists, not reposting");
+      return;
+    }
 
     const embed = new EmbedBuilder()
       .setTitle("📹 Video Verification Needed")
       .setDescription(
         "Click below to request a private verification call.\n\n" +
-        "🎥 Camera must be ON\n👤 Only you in frame\n⏳ Please wait patiently\n\n" +
-        "Press when ready ☀️"
+          "🎥 Camera must be ON\n👤 Only you in frame\n⏳ Please wait patiently\n\n" +
+          "Press when ready ☀️"
       )
       .setColor(0x2ecc71);
 
@@ -34,11 +42,12 @@ module.exports = {
       .setStyle(ButtonStyle.Primary)
       .setEmoji("🎥");
 
-    await channel.send({
+    const msg = await channel.send({
       embeds: [embed],
       components: [new ActionRowBuilder().addComponents(button)],
     });
 
+    await msg.pin().catch(() => {});
     console.log("✅ Video verification button posted");
   },
 
@@ -50,29 +59,34 @@ module.exports = {
     // ✅ Close Ticket Handler
     if (interaction.customId === "close_video_ticket") {
       const channel = interaction.channel;
-
       const username = channel.name.replace("video-", "");
       const linkedVoice = guild.channels.cache.find(
-        ch => ch.name === `🎥 verify-${username}`
+        (ch) => ch.name === `🎥 verify-${username}`
       );
+
+      // ✅ Reply BEFORE deleting (prevents "Unknown Channel" error)
+      await interaction.reply({
+        content: "✅ Ticket closed!",
+        flags: 64, // same as ephemeral: true, but non-deprecated
+      });
 
       if (linkedVoice) await linkedVoice.delete().catch(() => {});
       await channel.delete().catch(() => {});
       console.log(`📕 Closed video ticket for ${username}`);
-      await interaction.reply({ content: "✅ Ticket closed!", ephemeral: true });
       return;
     }
 
     // ✅ Prevent multiple tickets per user
     const username = member.user.username.toLowerCase();
     const existing = guild.channels.cache.find(
-      ch => ch.name === `video-${username}` || ch.name === `🎥 verify-${username}`
+      (ch) =>
+        ch.name === `video-${username}` || ch.name === `🎥 verify-${username}`
     );
 
     if (existing) {
       return interaction.reply({
         content: "⛔ You already have an active video verification ticket!",
-        ephemeral: true,
+        flags: 64, // same as ephemeral
       });
     }
 
@@ -117,7 +131,10 @@ module.exports = {
         permissionOverwrites: [
           {
             id: guild.roles.everyone.id,
-            deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect],
+            deny: [
+              PermissionFlagsBits.ViewChannel,
+              PermissionFlagsBits.Connect,
+            ],
           },
           {
             id: member.id,
@@ -132,11 +149,12 @@ module.exports = {
 
       await interaction.reply({
         content: "✅ Ticket created! Staff will join you soon.",
-        ephemeral: true,
+        flags: 64,
       });
 
-      console.log(`📹 Verification ticket + voice channel created for ${member.user.tag}`);
+      console.log(
+        `📹 Verification ticket + voice channel created for ${member.user.tag}`
+      );
     }
   },
-}; 
- 
+};

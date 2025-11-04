@@ -1,7 +1,6 @@
 // index.js
 require("dotenv").config();
 const fs = require("fs");
-const cron = require("node-cron");
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
 // 🧩 Handlers
@@ -51,34 +50,34 @@ client.once("ready", async () => {
   await registerSlashCommands();
   await initVideoRequestMessage(client);
 
-  // 🌴 Post both polls once at startup
+  // 🌴 Run both polls once at startup
   await postDailyWouldYouRather(client);
   await postDailyThisOrThat(client);
 
   // 🕒 Schedule new polls every 26 hours
-  // "0 */26 * * *" → every 26 hours (minute 0)
-  cron.schedule("0 */26 * * *", async () => {
-    console.log("🕒 Scheduled 26-hour 'Would You Rather' poll...");
+  const TWENTY_SIX_HOURS = 26 * 60 * 60 * 1000;
+
+  // Would You Rather
+  setInterval(async () => {
+    console.log("🕒 26-hour interval: Posting 'Would You Rather' poll...");
     await postDailyWouldYouRather(client);
-  });
+  }, TWENTY_SIX_HOURS);
 
-  // "5 */26 * * *" → every 26 hours, 5 minutes later (to avoid overlap)
-  cron.schedule("5 */26 * * *", async () => {
-    console.log("🕒 Scheduled 26-hour 'This or That' poll...");
+  // This or That (run 5 minutes after the first)
+  setInterval(async () => {
+    console.log("🕒 26-hour interval: Posting 'This or That' poll...");
     await postDailyThisOrThat(client);
-  });
+  }, TWENTY_SIX_HOURS);
 
-  console.log("📆 26-hour poll scheduler started for both channels!");
+  console.log("📆 26-hour interval scheduler started for both polls!");
 });
 
 // 🌴 Naturist Story Game
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  // Handle story posts
   await handleStoryMessage(message);
 
-  // Handle reset command
   if (message.content === "!resetstory") {
     await resetStory(message);
   }
@@ -93,7 +92,6 @@ client.on("channelUpdate", handleTicketUpdate);
 // 🎯 Handle all interactions (slash commands + buttons)
 client.on("interactionCreate", async (interaction) => {
   try {
-    // 🟢 Slash Commands
     if (interaction.isChatInputCommand()) {
       console.log(`⚙️ Slash command used: ${interaction.commandName}`);
 
@@ -111,7 +109,6 @@ client.on("interactionCreate", async (interaction) => {
       });
     }
 
-    // 🟢 Buttons (Video Verify system)
     if (interaction.isButton()) {
       return handleVideoInteraction(interaction);
     }

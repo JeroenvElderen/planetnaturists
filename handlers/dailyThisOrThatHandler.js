@@ -10,11 +10,19 @@ module.exports = {
 
       console.log("🧠 Checking for existing active 'This or That' poll…");
 
-      // 🔹 1. Check for an active poll
+      // 🔹 1. Check for an active poll (with fallback to timestamp)
       const recentMessages = await channel.messages.fetch({ limit: 20 });
-      const activePoll = recentMessages.find(
-        (msg) => msg.poll && !msg.poll.expired
-      );
+      const now = Date.now();
+      const activePoll = recentMessages.find((msg) => {
+        if (!msg.poll) return false;
+
+        const createdAt = msg.createdTimestamp;
+        const hoursSince = (now - createdAt) / (1000 * 60 * 60);
+        const bufferHours = 0.1; // ~6 minutes buffer
+
+        const isExpired = msg.poll.expired || hoursSince > (msg.poll.duration + bufferHours);
+        return !isExpired;
+      });
 
       if (activePoll) {
         console.log("⏸️ Active poll found — skipping new post.");

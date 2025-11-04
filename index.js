@@ -1,7 +1,7 @@
 // index.js
 require("dotenv").config();
 const fs = require("fs");
-const cron = require("node-cron"); // 🔹 Added for hourly scheduling
+const cron = require("node-cron");
 const { Client, GatewayIntentBits, Partials } = require("discord.js");
 
 // 🧩 Handlers
@@ -51,22 +51,24 @@ client.once("ready", async () => {
   await registerSlashCommands();
   await initVideoRequestMessage(client);
 
-  // 🌴 Run the daily polls once at startup
+  // 🌴 Post both polls once at startup
   await postDailyWouldYouRather(client);
   await postDailyThisOrThat(client);
 
-  // 🕒 Hourly recheck for both polls (independent channels)
-  cron.schedule("0 * * * *", async () => {
-    console.log("🕐 Hourly check for 'Would You Rather' poll...");
+  // 🕒 Schedule new polls every 26 hours
+  // "0 */26 * * *" → every 26 hours (minute 0)
+  cron.schedule("0 */26 * * *", async () => {
+    console.log("🕒 Scheduled 26-hour 'Would You Rather' poll...");
     await postDailyWouldYouRather(client);
   });
 
-  cron.schedule("5 * * * *", async () => {
-    console.log("🕐 Hourly check for 'This or That' poll...");
+  // "5 */26 * * *" → every 26 hours, 5 minutes later (to avoid overlap)
+  cron.schedule("5 */26 * * *", async () => {
+    console.log("🕒 Scheduled 26-hour 'This or That' poll...");
     await postDailyThisOrThat(client);
   });
 
-  console.log("📆 Hourly poll scheduler started for both channels!");
+  console.log("📆 26-hour poll scheduler started for both channels!");
 });
 
 // 🌴 Naturist Story Game

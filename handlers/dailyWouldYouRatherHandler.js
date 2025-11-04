@@ -8,29 +8,7 @@ module.exports = {
       const channel = await client.channels.fetch(WOULD_YOU_RATHER_CHANNEL_ID);
       if (!channel) return console.error("❌ Channel not found");
 
-      console.log("🧠 Checking for existing active 'Would You Rather' poll…");
-
-      // 🔹 1. Check for an active poll (force refresh + fallback timestamp check)
-      const recentMessages = await channel.messages.fetch({ limit: 20, force: true });
-      const now = Date.now();
-      const activePoll = recentMessages.find((msg) => {
-        if (!msg.poll) return false;
-
-        const createdAt = msg.createdTimestamp;
-        const hoursSince = (now - createdAt) / (1000 * 60 * 60);
-        const bufferHours = 0.1; // ~6 minutes buffer
-
-        // Expired if API says so OR message age > duration + buffer
-        const isExpired = msg.poll.expired || hoursSince > (msg.poll.duration + bufferHours);
-        return !isExpired;
-      });
-
-      if (activePoll) {
-        console.log("⏸️ Active poll found — skipping new post.");
-        return;
-      }
-
-      console.log("🧠 Generating today's naturist 'Would You Rather' question (Gemini)…");
+      console.log("🌞 Posting scheduled 'Would You Rather' poll...");
 
       const prompt = `
 You are a friendly naturist community game host.
@@ -66,7 +44,7 @@ Keep it under 25 words.
       optionA = optionA.replace(/^would you rather\s*/i, "").trim();
       optionB = optionB.replace(/^would you rather\s*/i, "").trim();
 
-      // ✅ Post poll
+      // ✅ Post new poll
       await channel.send({
         poll: {
           question: { text: "Would You Rather" },
@@ -79,9 +57,9 @@ Keep it under 25 words.
         },
       });
 
-      console.log(`🌞 Posted poll: Would you rather ${optionA} or ${optionB}?`);
+      console.log(`✅ Posted new poll: Would you rather ${optionA} or ${optionB}?`);
     } catch (err) {
-      console.error("❌ Error posting daily 'Would You Rather' poll:", err);
+      console.error("❌ Error posting 'Would You Rather' poll:", err);
     }
   },
 };

@@ -50,23 +50,27 @@ client.once("ready", async () => {
   await registerSlashCommands();
   await initVideoRequestMessage(client);
 
-  // 🌴 Run both polls once at startup
+  // 🌴 Post both polls immediately at startup
   await postDailyWouldYouRather(client);
-  await postDailyThisOrThat(client);
 
-  // 🕒 Schedule new polls every 26 hours
+  // Wait 5 minutes before posting “This or That”
+  setTimeout(async () => {
+    await postDailyThisOrThat(client);
+  }, 5 * 60 * 1000);
+
+  // 🕒 Set up repeating 26-hour timers
   const TWENTY_SIX_HOURS = 26 * 60 * 60 * 1000;
 
-  // Would You Rather
+  // “Would You Rather” every 26 hours
   setInterval(async () => {
     console.log("🕒 26-hour interval: Posting 'Would You Rather' poll...");
     await postDailyWouldYouRather(client);
-  }, TWENTY_SIX_HOURS);
 
-  // This or That (run 5 minutes after the first)
-  setInterval(async () => {
-    console.log("🕒 26-hour interval: Posting 'This or That' poll...");
-    await postDailyThisOrThat(client);
+    // Chain the “This or That” poll 5 minutes later
+    setTimeout(async () => {
+      console.log("🕒 26-hour interval: Posting 'This or That' poll (5-min offset)...");
+      await postDailyThisOrThat(client);
+    }, 5 * 60 * 1000);
   }, TWENTY_SIX_HOURS);
 
   console.log("📆 26-hour interval scheduler started for both polls!");

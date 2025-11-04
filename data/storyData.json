@@ -1,5 +1,8 @@
 {
-  "story": [],
-  "lastUserId": null,
-  "storyMessageId": null
+  "story": [
+    "once",
+    "upon"
+  ],
+  "lastUserId": "946346329783803945",
+  "storyMessageId": "1431964755177897986"
 }

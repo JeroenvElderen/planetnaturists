@@ -10,8 +10,8 @@ module.exports = {
 
       console.log("🧠 Checking for existing active 'Would You Rather' poll…");
 
-      // 🔹 1. Check for an active poll (with fallback to timestamp)
-      const recentMessages = await channel.messages.fetch({ limit: 20 });
+      // 🔹 1. Check for an active poll (force refresh + fallback timestamp check)
+      const recentMessages = await channel.messages.fetch({ limit: 20, force: true });
       const now = Date.now();
       const activePoll = recentMessages.find((msg) => {
         if (!msg.poll) return false;
@@ -20,7 +20,7 @@ module.exports = {
         const hoursSince = (now - createdAt) / (1000 * 60 * 60);
         const bufferHours = 0.1; // ~6 minutes buffer
 
-        // Consider expired if flag true OR older than duration+buffer
+        // Expired if API says so OR message age > duration + buffer
         const isExpired = msg.poll.expired || hoursSince > (msg.poll.duration + bufferHours);
         return !isExpired;
       });
@@ -50,10 +50,9 @@ Keep it under 25 words.
       const result = await model.generateContent(prompt);
       const text = result.response.text().trim();
 
-      // 🧹 Clean text
+      // 🧹 Clean and extract question
       let cleanText = text.replace(/^hello.*?(would you rather)/i, "$1").trim();
 
-      // 🧩 Extract Option A / Option B
       const lower = cleanText.toLowerCase();
       const startIndex = lower.indexOf("would you rather");
       let rest = cleanText;
@@ -64,11 +63,10 @@ Keep it under 25 words.
       let optionA = parts[0]?.replace(/\?+$/, "").trim() || "Option A";
       let optionB = parts[1]?.replace(/\?+$/, "").trim() || "Option B";
 
-      // 🧹 Final cleanup
       optionA = optionA.replace(/^would you rather\s*/i, "").trim();
       optionB = optionB.replace(/^would you rather\s*/i, "").trim();
 
-      // ✅ Post Discord poll
+      // ✅ Post poll
       await channel.send({
         poll: {
           question: { text: "Would You Rather" },

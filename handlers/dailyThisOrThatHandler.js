@@ -10,8 +10,8 @@ module.exports = {
 
       console.log("🧠 Checking for existing active 'This or That' poll…");
 
-      // 🔹 1. Check for an active poll (with fallback to timestamp)
-      const recentMessages = await channel.messages.fetch({ limit: 20 });
+      // 🔹 1. Check for an active poll (force refresh + fallback timestamp check)
+      const recentMessages = await channel.messages.fetch({ limit: 20, force: true });
       const now = Date.now();
       const activePoll = recentMessages.find((msg) => {
         if (!msg.poll) return false;
@@ -52,7 +52,6 @@ Keep it under 25 words.
       // 🧹 Clean intro
       let cleanText = text.replace(/^hello.*?(this or that)/i, "$1").trim();
 
-      // 🧩 Extract Option A / Option B
       const lower = cleanText.toLowerCase();
       const startIndex = lower.indexOf("this or that");
       let rest = cleanText;
@@ -65,11 +64,10 @@ Keep it under 25 words.
         "Option A";
       let optionB = parts[1]?.replace(/\?+$/, "").trim() || "Option B";
 
-      // 🧹 Clean extras
       optionA = optionA.replace(/^this or that[:\-]?\s*/i, "").trim();
       optionB = optionB.replace(/^this or that[:\-]?\s*/i, "").trim();
 
-      // ✅ Post Discord poll
+      // ✅ Post poll
       await channel.send({
         poll: {
           question: { text: "This or That" },

@@ -2,6 +2,7 @@
 const { REST, Routes } = require("discord.js");
 const createCountryRoles = require("../commands/createCountryRoles");
 const verifyVideo = require("../commands/verifyVideo"); // 👈 your file
+const eco = require("../commands/eco");
 
 async function registerSlashCommands() {
   const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
@@ -14,6 +15,7 @@ async function registerSlashCommands() {
         body: [
           createCountryRoles.data.toJSON(),
           verifyVideo.data.toJSON(), // 👈 now it gets registered too
+          eco.data.toJSON(),
         ],
       }
     );

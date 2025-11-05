@@ -1,0 +1,23 @@
+{
+  "players": {
+    "946346329783803945": {
+      "xp": 23,
+      "calm": 0
+    }
+  },
+  "village": {
+    "resources": {
+      "wood": 0,
+      "stone": 1,
+      "clay": 0,
+      "leaves": 5,
+      "water": 0,
+      "fiber": 0,
+      "soil": 0,
+      "herbs": 0,
+      "rope": 1
+    },
+    "structures": {},
+    "calmness": 50
+  }
+}

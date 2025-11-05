@@ -21,7 +21,7 @@ const { postDailyThisOrThat } = require("./handlers/dailyThisOrThatHandler");
 // 🧩 Slash command files
 const verifyVideo = require("./commands/verifyVideo");
 const createCountryRoles = require("./commands/createCountryRoles");
-
+const eco = require("./commands/eco");
 // 🌐 Start Express keep-alive server
 setupKeepAlive();
 
@@ -105,6 +105,10 @@ client.on("interactionCreate", async (interaction) => {
 
       if (interaction.commandName === "createcountryroles") {
         return createCountryRoles.execute(interaction);
+      }
+
+      if (interaction.commandName === "eco") {
+        return eco.execute(interaction);
       }
 
       return interaction.reply({

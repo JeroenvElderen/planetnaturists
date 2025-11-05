@@ -1,7 +1,12 @@
 // handlers/eco/actions.js
 const config = require("../../config/ecoConfig");
 const { loadData, saveData } = require("./data");
-const { ensureResources, getPlayer, calculateVillageLevel } = require("./utils");
+const {
+  ensureResources,
+  getPlayer,
+  calculateVillageLevel,
+  formatLevelUpSummary,
+} = require("./utils");
 const { refreshVillageEmbed } = require("../villageUpdater");
 
 function gather(uid, username, client) {
@@ -19,11 +24,9 @@ function gather(uid, username, client) {
 
   const res =
     config.resources[Math.floor(Math.random() * config.resources.length)];
-  const amount =
-    Math.floor(Math.random() * (res.max - res.min + 1)) + res.min;
+  const amount = Math.floor(Math.random() * (res.max - res.min + 1)) + res.min;
 
-  player.inventory[res.name] =
-    (player.inventory[res.name] || 0) + amount;
+  player.inventory[res.name] = (player.inventory[res.name] || 0) + amount;
   player.xp += config.xpPerGather;
 
   saveData(data);
@@ -44,11 +47,13 @@ function relax(uid, username, client) {
 
   const leveledUp = calculateVillageLevel(data);
   saveData(data);
-  if (client && leveledUp) refreshVillageEmbed(client);
+  if (client) refreshVillageEmbed(client);
 
-  return `🧘 ${username} relaxes. +${config.calmPerRelax} Calm, +${config.xpPerRelax} XP 🌞${
-    leveledUp ? "\n🎉 The EcoVillage has leveled up! 🌿" : ""
-  }`;
+  const levelMessage = leveledUp
+    ? `\n${formatLevelUpSummary(data.village)}`
+    : "";
+
+  return `🧘 ${username} relaxes. +${config.calmPerRelax} Calm, +${config.xpPerRelax} XP 🌞${levelMessage}`;
 }
 
 function status() {
@@ -60,7 +65,14 @@ function status() {
     Object.values(data.village.structures)
       .map((s) => s.name)
       .join(", ") || "none yet";
-  return `🏡 **EcoVillage Status**\nResources: ${resources}\nBuilt: ${built}\n💚 Calmness: ${data.village.calmness}%`;
+  const capacity = data.village.storage?.capacity || 100;
+  const level = data.village.level || 1;
+  const currentXp = data.village.xp || 0;
+  const nextRequirement =
+    data.village.nextLevelRequirement && data.village.nextLevelRequirement > 0
+      ? data.village.nextLevelRequirement
+      : level * 100;
+  return `🏡 **EcoVillage Status**\nLevel: ${level} (XP: ${currentXp}/${nextRequirement})\nStorage Capacity: ${capacity}\nResources: ${resources}\nBuilt: ${built}\n💚 Calmness:${data.village.calmness}%`;
 }
 
 function top() {

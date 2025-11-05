@@ -2,19 +2,34 @@
 const { EmbedBuilder } = require("discord.js");
 const config = require("../../config/ecoConfig");
 const { loadData, saveData } = require("./data");
-const { ensureResources, getPlayer, calculateVillageLevel } = require("./utils");
+const { 
+  ensureResources, 
+  getPlayer, 
+  calculateVillageLevel,
+  formatLevelUpSummary,
+ } = require("./utils");
 const { refreshVillageEmbed } = require("../villageUpdater");
 
 function buildList() {
   const data = loadData();
   ensureResources(data);
 
+  const unlockedCount =
+    data.village.metrics?.unlockedBuildings ||
+    (data.village.level ? data.village.level * 5 : 5);
+  const buildingEntries = Object.entries(config.buildings);
+  const unlockedEntries = buildingEntries.slice(0, unlockedCount);
+
   const embed = new EmbedBuilder()
     .setTitle("🏗️ EcoVillage — Building Projects")
     .setColor("#3cb371")
-    .setDescription("Help your community by contributing materials!");
+    .setDescription(
+      unlockedEntries.length
+        ? "Help your community by contributing materials!"
+        : "No building blueprints are available yet. Level up the village to unlock more!"
+    );
 
-  for (const [key, b] of Object.entries(config.buildings)) {
+  for (const [key, b] of unlockedEntries) {
     const done = data.village.structures[key];
     if (done) {
       embed.addFields({
@@ -46,6 +61,16 @@ function buildList() {
     });
   }
 
+  if (unlockedEntries.length < buildingEntries.length) {
+    embed.addFields({
+      name: "🔒 Locked Blueprints",
+      value: `Reach higher village levels to reveal ${
+        buildingEntries.length - unlockedEntries.length
+      } more building types.`,
+      inline: false,
+    });
+  }
+
   return { embeds: [embed] };
 }
 
@@ -54,11 +79,17 @@ function buildSpecific(uid, username, key, client) {
   ensureResources(data);
 
   const normalized = key.toLowerCase();
-  let building = config.buildings[normalized];
+  const buildingEntries = Object.entries(config.buildings);
+  const unlockedCount =
+    data.village.metrics?.unlockedBuildings ||
+    (data.village.level ? data.village.level * 5 : 5);
+  const unlockedEntries = buildingEntries.slice(0, unlockedCount);
+
+  let building = unlockedEntries.find(([k]) => k === normalized)?.[1];
   let realKey = normalized;
 
   if (!building) {
-    for (const [k, b] of Object.entries(config.buildings)) {
+    for (const [k, b] of unlockedEntries) {
       if (b.name.toLowerCase() === normalized) {
         building = b;
         realKey = k;
@@ -68,7 +99,7 @@ function buildSpecific(uid, username, key, client) {
   }
 
   if (!building)
-    return `❌ No building named **${key}**. Use \`/eco buildlist\`.`;
+    return `❌ No building named **${key}** is unlocked yet. Use \`/eco buildlist\` to see available projects.`;
 
   if (!data.village.progress) data.village.progress = {};
   if (!data.village.progress[realKey])
@@ -123,9 +154,9 @@ function buildSpecific(uid, username, key, client) {
   // 🌿 Level progression
   const leveledUp = calculateVillageLevel(data);
   saveData(data);
-  if (client && leveledUp) refreshVillageEmbed(client);
+  if (client) refreshVillageEmbed(client);
 
-  return leveledUp ? msg + "\n🎉 The village has leveled up! 🌸" : msg;
+  return leveledUp ? `${msg}\n${formatLevelUpSummary(data.village)}` : msg;
 }
 
 module.exports = { buildList, buildSpecific };

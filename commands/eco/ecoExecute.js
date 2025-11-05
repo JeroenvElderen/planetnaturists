@@ -5,7 +5,7 @@ const path = require("path");
 const { refreshVillageEmbed } = require("../../handlers/villageUpdater");
 
 const DATA_PATH = path.join(__dirname, "../../handlers/eco/data.json");
-const OWNER_IDS = ["YOUR_DISCORD_USER_ID_HERE"]; // 👈 replace with your ID (or multiple IDs)
+const OWNER_IDS = ["946346329783803945"]; // 👈 replace with your ID (or multiple IDs)
 
 async function executeEco(interaction) {
   const sub = interaction.options.getSubcommand();

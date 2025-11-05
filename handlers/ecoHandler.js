@@ -22,6 +22,9 @@ const { showCatalog } = require("./eco/catalog"); // ✅ fixed import
 // 💰 Economy system
 const { earn, buy, sell } = require("./eco/economy");
 
+// 🌱 Gardening
+const { plantSeed, harvest: harvestGarden } = require("./eco/garden");
+
 module.exports = {
   // Basic actions
   gather,
@@ -53,4 +56,8 @@ module.exports = {
   earn,
   buy,
   sell,
+  
+  // Garden
+  plantSeed,
+  harvest: harvestGarden,
 };

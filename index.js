@@ -23,6 +23,10 @@ const { scheduleVillageUpdates } = require("./handlers/villageUpdater");
 const { scheduleSeasonRotation } = require("./handlers/seasonHandler");
 const { scheduleWeatherUpdates } = require("./handlers/weatherHandler");
 const { scheduleTimeCycle } = require("./handlers/timeHandler");
+const {
+  scheduleGardenNotifications,
+  handleGardenButton,
+} = require("./handlers/eco/garden");
 
 // 🧩 Slash command files
 const verifyVideo = require("./commands/verifyVideo");
@@ -62,6 +66,7 @@ client.once("ready", async () => {
   scheduleSeasonRotation(client);
   scheduleWeatherUpdates(client);
   scheduleTimeCycle(client);
+  scheduleGardenNotifications(client);
 
   // 🌴 Post both polls immediately at startup
   await postDailyWouldYouRather(client);
@@ -131,6 +136,10 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     if (interaction.isButton()) {
+      if (interaction.customId.startsWith("eco_garden_ack")) {
+        const handled = await handleGardenButton(interaction);
+        if (handled) return;
+      }
       return handleVideoInteraction(interaction);
     }
   } catch (err) {

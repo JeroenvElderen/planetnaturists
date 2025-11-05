@@ -87,8 +87,9 @@ function saveData(data) {
 
 function getPlayer(data, uid) {
   if (!data.players[uid]) {
-    data.players[uid] = { inventory: {}, money: 0, calmness: 50 };
+   data.players[uid] = { inventory: {}, money: 0, calmness: 50, garden: [] };
   }
+  if (!Array.isArray(data.players[uid].garden)) data.players[uid].garden = [];
   return data.players[uid];
 }
 

@@ -87,6 +87,16 @@ async function executeEco(interaction) {
         interaction.options.getString("name").toLowerCase()
       );
       break;
+      case "plant":
+      msg = await eco.plantSeed(
+        user.id,
+        user.username,
+        interaction.options.getString("seed").toLowerCase()
+      );
+      break;
+    case "harvest":
+      msg = await eco.harvest(user.id, user.username);
+      break;
     case "earn":
       msg = eco.earn(user.id, 10, "helping the village");
       break;

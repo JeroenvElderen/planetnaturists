@@ -1,4 +1,3 @@
-// commands/eco/ecoUtils.js
 const ECO_CHANNEL_ID = "1435568091290402836";
 
 /**
@@ -7,10 +6,12 @@ const ECO_CHANNEL_ID = "1435568091290402836";
  */
 async function ensureEcoChannel(interaction) {
   if (interaction.channelId !== ECO_CHANNEL_ID) {
-    await interaction.reply({
-      content: `🌻 Please use EcoVillage commands only in <#${ECO_CHANNEL_ID}>.`,
-      flags: 64, // 64 = EPHEMERAL
-    }).catch(() => {});
+    await interaction
+      .reply({
+        content: `🌻 Please use EcoVillage commands only in <#${ECO_CHANNEL_ID}>.`,
+        flags: 64, // 64 = EPHEMERAL
+      })
+      .catch(() => {});
     return false;
   }
   return true;
@@ -18,22 +19,26 @@ async function ensureEcoChannel(interaction) {
 
 /**
  * Sends a silent private reply that self-deletes after a delay.
- * Works whether the interaction was deferred or not.
+ * Works with both string and object (embed) responses.
  */
 async function sendSilentReply(interaction, msg, delay = 15000) {
   try {
+    if (!msg) return;
+
+    // 🔍 Determine message type (string or object)
+    const isString = typeof msg === "string";
+    const payload = isString
+      ? { content: msg, allowedMentions: { parse: [] } }
+      : msg; // directly use embed or other structured message objects
+
     if (interaction.deferred || interaction.replied) {
       // ✅ Safe path if already acknowledged
-      await interaction.editReply({
-        content: msg,
-        allowedMentions: { parse: [] },
-      });
+      await interaction.editReply(payload);
     } else {
-      // ✅ Fallback path if deferReply() failed or timed out
+      // ✅ Fallback if deferReply() failed or timed out
       await interaction.reply({
-        content: msg,
-        flags: 64,
-        allowedMentions: { parse: [] },
+        ...payload,
+        flags: 64, // Ephemeral (private)
       });
     }
 
@@ -42,11 +47,11 @@ async function sendSilentReply(interaction, msg, delay = 15000) {
       try {
         await interaction.deleteReply();
       } catch {
-        // ignore missing message / perms
+        // ignore missing message / permissions
       }
     }, delay);
   } catch (err) {
-    console.error("⚠️ sendSilentReply failed:", err.message);
+    console.warn("⚠️ sendSilentReply failed:", err.message);
   }
 }
 

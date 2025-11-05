@@ -1,5 +1,21 @@
 {
-  "players": {},
+  "players": {
+    "946346329783803945": {
+      "xp": 0,
+      "calm": 0,
+      "inventory": {},
+      "money": 0,
+      "garden": [
+        {
+          "id": "sunflower-1762386222132",
+          "seed": "sunflower",
+          "plantedAt": 1762386222132,
+          "growthTime": 56512080,
+          "notifiedStages": []
+        }
+      ]
+    }
+  },
   "village": {
     "level": 1,
     "xp": 0,
@@ -9,15 +25,15 @@
     "calmness": 0,
     "weather": {
       "type": "Sunny",
-      "nextChange": null,
-      "changedAt": null
+      "nextChange": 1762400622132,
+      "changedAt": 1762386222132
     },
     "season": "Spring",
-    "seasonChangeAt": null,
-    "seasonChangedAt": null,
+    "seasonChangeAt": 1762472622132,
+    "seasonChangedAt": 1762386222132,
     "time": "Day",
-    "timeChangeAt": null,
-    "timeChangedAt": null,
+    "timeChangeAt": 1762407822132,
+    "timeChangedAt": 1762386222132,
     "resources": {},
     "progress": {},
     "structures": {},

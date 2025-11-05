@@ -1,5 +1,6 @@
 // commands/eco/ecoBase.js
 const { SlashCommandBuilder } = require("discord.js");
+const { seedChoices } = require("../../handlers/eco/garden");
 
 module.exports = new SlashCommandBuilder()
   .setName("eco")
@@ -16,6 +17,21 @@ module.exports = new SlashCommandBuilder()
   // 🎒 Inventory & Donations
   .addSubcommand((sub) =>
     sub.setName("inventory").setDescription("View your inventory")
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName("plant")
+      .setDescription("Plant a seed in your garden")
+      .addStringOption((o) =>
+        o
+          .setName("seed")
+          .setDescription("Choose a seed to plant")
+          .setRequired(true)
+          .addChoices(...seedChoices)
+      )
+  )
+  .addSubcommand((sub) =>
+    sub.setName("harvest").setDescription("Harvest any fully grown crops")
   )
   .addSubcommand((sub) =>
     sub

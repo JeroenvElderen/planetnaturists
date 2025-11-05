@@ -1,5 +1,6 @@
+// handlers/eco/inventory.js
 const { loadData, saveData } = require("./data");
-const { ensureResources, getPlayer } = require("./utils");
+const { ensureResources, getPlayer, calculateVillageLevel } = require("./utils");
 const { refreshVillageEmbed } = require("../villageUpdater");
 
 function inventory(uid) {
@@ -7,7 +8,10 @@ function inventory(uid) {
   const player = getPlayer(data, uid);
   const inv = Object.entries(player.inventory);
   if (!inv.length) return "🎒 Your inventory is empty.";
-  return "🎒 **Your Inventory:**\n" + inv.map(([r, q]) => `${r}: ${q}`).join("\n");
+  return (
+    "🎒 **Your Inventory:**\n" +
+    inv.map(([r, q]) => `${r}: ${q}`).join("\n")
+  );
 }
 
 function donate(uid, username, resource, amount, client) {
@@ -19,13 +23,21 @@ function donate(uid, username, resource, amount, client) {
   if (have < amount || amount <= 0)
     return `❌ Not enough **${resource}** (you have ${have}).`;
 
+  // Transfer donation
   player.inventory[resource] -= amount;
-  data.village.resources[resource] = (data.village.resources[resource] || 0) + amount;
+  data.village.resources[resource] =
+    (data.village.resources[resource] || 0) + amount;
+
+  // 🌿 Recalculate village level
+  const leveledUp = calculateVillageLevel(data);
   saveData(data);
 
-  if (client) refreshVillageEmbed(client);
+  // 🌸 Refresh village embed
+  if (client && leveledUp) refreshVillageEmbed(client);
 
-  return `🤝 **${username}** donated ${amount} ${resource} to the village!`;
+  return `🤝 **${username}** donated ${amount} ${resource} to the village!${
+    leveledUp ? "\n🎉 The EcoVillage has leveled up! 🌿" : ""
+  }`;
 }
 
 module.exports = { inventory, donate };

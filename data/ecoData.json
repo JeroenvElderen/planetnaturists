@@ -1,64 +1,14 @@
 {
-  "players": {
-    "946346329783803945": {
-      "xp": 63,
-      "calm": 0,
-      "inventory": {
-        "clay": 0,
-        "soil": 0,
-        "water": 0,
-        "leaves": 0
-      },
-      "gathers": [
-        1762365554542,
-        1762366272350,
-        1762368517580
-      ],
-      "money": 18,
-      "house": {
-        "level": 1,
-        "name": "jeroen_dragonfly’s Cabin",
-        "plants": [
-          "bonsai"
-        ]
-      },
-      "earns": [
-        1762367473428,
-        1762367475130,
-        1762367477071,
-        1762367478480,
-        1762367482151
-      ]
-    },
-    "809423129076039710": {
-      "xp": 0,
-      "calm": 0,
-      "inventory": {
-        "water": 3
-      },
-      "money": 0
-    }
-  },
+  "players": {},
   "village": {
-    "resources": {
-      "wood": 0,
-      "stone": 1,
-      "clay": 2,
-      "leaves": 7,
-      "water": 0,
-      "fiber": 0,
-      "soil": 0,
-      "herbs": 0,
-      "rope": 1
-    },
-    "structures": {},
+    "level": 1,
+    "xp": 0,
     "calmness": 50,
-    "progress": {
-      "garden": {
-        "soil": 1,
-        "water": 9,
-        "wood": 0
-      }
-    }
+    "weather": "Sunny",
+    "season": "Spring",
+    "resources": {},
+    "progress": {},
+    "structures": {},
+    "storage": { "level": 1, "capacity": 100 }
   }
 }

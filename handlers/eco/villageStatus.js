@@ -3,20 +3,29 @@ const { EmbedBuilder } = require("discord.js");
 const { loadData } = require("./data");
 const config = require("../../config/ecoConfig");
 
-// 🌿 Helper: visual progress bar
+// Progress bar
 function progressBar(pct) {
   const filled = Math.round(pct / 10);
   return "▓".repeat(filled) + "░".repeat(10 - filled) + ` ${pct}%`;
 }
 
+// Level label helper
+function getLevelName(level) {
+  if (level >= 10) return "🌺 Legendary Sanctuary";
+  if (level >= 6) return "🌻 Thriving Community";
+  if (level >= 3) return "🌿 Flourishing Settlement";
+  return "🌱 Peaceful Haven";
+}
+
 function generateVillageEmbed() {
   const data = loadData();
   const calmness = data.village.calmness ?? 50;
+  const level = data.village.level ?? 1;
+
   const builtList = Object.values(data.village.structures || {}).map((s) => s.name);
   const resources = Object.entries(data.village.resources || {});
   const progress = data.village.progress || {};
 
-  // 🌾 Determine under-construction buildings
   const underConstruction = [];
   for (const [key, b] of Object.entries(config.buildings || {})) {
     if (data.village.structures[key]) continue;
@@ -29,28 +38,26 @@ function generateVillageEmbed() {
     }
   }
 
-  // 🌿 Filter out zero-quantity resources
   const nonEmptyResources = resources.filter(([_, qty]) => qty > 0);
 
-  // 🌺 Create calm, minimalistic embed
   const embed = new EmbedBuilder()
-    .setColor("#7BC47F") // natural soft green
-    .setTitle("🌸 EcoVillage — Harmony & Growth 🌸")
+    .setColor("#7BC47F")
+    .setTitle(`🏡 EcoVillage — Level ${level} (${getLevelName(level)})`)
     .addFields(
       {
-        name: "💚 **Serenity Level**",
+        name: "💚 Serenity Level",
         value:
           `**${calmness}% Calmness** — ${
             calmness < 40
-              ? "The air feels restless. Time for peaceful rest. 🍃"
+              ? "The air feels restless. 🍃"
               : calmness < 80
-              ? "A soothing peace drifts through the trees. 🌿"
+              ? "Peace drifts through the trees. 🌿"
               : "Perfect harmony — a tranquil paradise. 🌸"
           }\n${progressBar(calmness)}\n\u200B`,
         inline: false,
       },
       {
-        name: "🏗️ **Village Projects**",
+        name: "🏗️ Village Projects",
         value:
           builtList.length || underConstruction.length
             ? [
@@ -68,7 +75,7 @@ function generateVillageEmbed() {
         inline: false,
       },
       {
-        name: "🌾 **Shared Resources**",
+        name: "🌾 Shared Resources",
         value:
           nonEmptyResources.length
             ? nonEmptyResources
@@ -78,9 +85,7 @@ function generateVillageEmbed() {
         inline: false,
       }
     )
-    .setFooter({
-      text: "EcoVillage 🌻 — calm minds, growing hearts",
-    })
+    .setFooter({ text: "EcoVillage 🌻 — calm minds, growing hearts" })
     .setTimestamp();
 
   return embed;

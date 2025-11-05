@@ -1,7 +1,8 @@
+// handlers/eco/buildings.js
 const { EmbedBuilder } = require("discord.js");
 const config = require("../../config/ecoConfig");
 const { loadData, saveData } = require("./data");
-const { ensureResources, getPlayer } = require("./utils");
+const { ensureResources, getPlayer, calculateVillageLevel } = require("./utils");
 const { refreshVillageEmbed } = require("../villageUpdater");
 
 function buildList() {
@@ -19,7 +20,7 @@ function buildList() {
       embed.addFields({
         name: `${b.emoji} ${b.name}`,
         value: `✅ Completed by ${done.builtBy}`,
-        inline: false
+        inline: false,
       });
       continue;
     }
@@ -29,15 +30,19 @@ function buildList() {
     let pct = 0;
     for (const [res, need] of Object.entries(b.cost)) {
       const have = progress[res] || 0;
-      const bar = "▓".repeat(Math.round((have / need) * 10)) + "░".repeat(10 - Math.round((have / need) * 10));
+      const bar =
+        "▓".repeat(Math.round((have / need) * 10)) +
+        "░".repeat(10 - Math.round((have / need) * 10));
       lines.push(`${bar} ${have}/${need} ${res}`);
       pct += have / need;
     }
     pct = Math.round((pct / Object.keys(b.cost).length) * 100);
     embed.addFields({
       name: `${b.emoji} ${b.name} (${key})`,
-      value: `**Progress:** ${pct}%\n${lines.join("\n")}\n🔨 Use /eco build name:${key}`,
-      inline: false
+      value: `**Progress:** ${pct}%\n${lines.join(
+        "\n"
+      )}\n🔨 Use /eco build name:${key}`,
+      inline: false,
     });
   }
 
@@ -62,14 +67,18 @@ function buildSpecific(uid, username, key, client) {
     }
   }
 
-  if (!building) return `❌ No building named **${key}**. Use \`/eco buildlist\`.`;
+  if (!building)
+    return `❌ No building named **${key}**. Use \`/eco buildlist\`.`;
 
   if (!data.village.progress) data.village.progress = {};
   if (!data.village.progress[realKey])
-    data.village.progress[realKey] = Object.fromEntries(Object.entries(building.cost).map(([r, q]) => [r, 0]));
+    data.village.progress[realKey] = Object.fromEntries(
+      Object.entries(building.cost).map(([r, q]) => [r, 0])
+    );
 
   const progress = data.village.progress[realKey];
-  if (data.village.structures[realKey]) return `✅ **${building.name}** is already completed!`;
+  if (data.village.structures[realKey])
+    return `✅ **${building.name}** is already completed!`;
 
   let contributed = false;
   let completed = true;
@@ -94,18 +103,29 @@ function buildSpecific(uid, username, key, client) {
   if (!contributed) {
     msg = `🧱 No available materials for **${building.name}**. Use /eco donate first.`;
   } else if (completed) {
-    data.village.structures[realKey] = { name: building.name, builtBy: username, at: Date.now() };
+    data.village.structures[realKey] = {
+      name: building.name,
+      builtBy: username,
+      at: Date.now(),
+    };
     const player = getPlayer(data, uid);
     player.xp += building.reward.xp;
-    data.village.calmness = Math.min(100, data.village.calmness + building.reward.calm);
+    data.village.calmness = Math.min(
+      100,
+      data.village.calmness + building.reward.calm
+    );
+
     msg = `🎉 **${building.name}** completed by ${username}! +${building.reward.xp} XP 🌿`;
   } else {
     msg = `🏗️ **${building.name}** progress updated:\n${report.join("\n")}`;
   }
 
+  // 🌿 Level progression
+  const leveledUp = calculateVillageLevel(data);
   saveData(data);
-  if (client) refreshVillageEmbed(client);
-  return msg;
+  if (client && leveledUp) refreshVillageEmbed(client);
+
+  return leveledUp ? msg + "\n🎉 The village has leveled up! 🌸" : msg;
 }
 
 module.exports = { buildList, buildSpecific };

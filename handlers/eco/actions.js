@@ -1,6 +1,7 @@
+// handlers/eco/actions.js
 const config = require("../../config/ecoConfig");
 const { loadData, saveData } = require("./data");
-const { ensureResources, getPlayer } = require("./utils");
+const { ensureResources, getPlayer, calculateVillageLevel } = require("./utils");
 const { refreshVillageEmbed } = require("../villageUpdater");
 
 function gather(uid, username, client) {
@@ -18,8 +19,11 @@ function gather(uid, username, client) {
 
   const res =
     config.resources[Math.floor(Math.random() * config.resources.length)];
-  const amount = Math.floor(Math.random() * (res.max - res.min + 1)) + res.min;
-  player.inventory[res.name] = (player.inventory[res.name] || 0) + amount;
+  const amount =
+    Math.floor(Math.random() * (res.max - res.min + 1)) + res.min;
+
+  player.inventory[res.name] =
+    (player.inventory[res.name] || 0) + amount;
   player.xp += config.xpPerGather;
 
   saveData(data);
@@ -30,14 +34,21 @@ function gather(uid, username, client) {
   }! (Total: ${player.inventory[res.name]})`;
 }
 
-function relax(uid, username) {
+function relax(uid, username, client) {
   const data = loadData();
   const player = getPlayer(data, uid);
+
   player.calm += config.calmPerRelax;
   player.xp += config.xpPerRelax;
   data.village.calmness = Math.min(100, data.village.calmness + 1);
+
+  const leveledUp = calculateVillageLevel(data);
   saveData(data);
-  return `🧘 ${username} relaxes. +${config.calmPerRelax} Calm, +${config.xpPerRelax} XP 🌞`;
+  if (client && leveledUp) refreshVillageEmbed(client);
+
+  return `🧘 ${username} relaxes. +${config.calmPerRelax} Calm, +${config.xpPerRelax} XP 🌞${
+    leveledUp ? "\n🎉 The EcoVillage has leveled up! 🌿" : ""
+  }`;
 }
 
 function status() {

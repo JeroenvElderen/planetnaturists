@@ -20,6 +20,9 @@ const { postDailyThisOrThat } = require("./handlers/dailyThisOrThatHandler");
 
 // 🌿 EcoVillage Embed Updater
 const { scheduleVillageUpdates } = require("./handlers/villageUpdater");
+const { scheduleSeasonRotation } = require("./handlers/seasonHandler");
+const { scheduleWeatherUpdates } = require("./handlers/weatherHandler");
+const { scheduleTimeCycle } = require("./handlers/timeHandler");
 
 // 🧩 Slash command files
 const verifyVideo = require("./commands/verifyVideo");
@@ -56,6 +59,9 @@ client.once("ready", async () => {
 
   // 🏡 Start EcoVillage embed auto-updater (every 5 min)
   scheduleVillageUpdates(client);
+  scheduleSeasonRotation(client);
+  scheduleWeatherUpdates(client);
+  scheduleTimeCycle(client);
 
   // 🌴 Post both polls immediately at startup
   await postDailyWouldYouRather(client);

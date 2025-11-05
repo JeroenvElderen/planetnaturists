@@ -2,29 +2,34 @@ const fs = require("fs");
 const path = require("path");
 const dataPath = path.join(__dirname, "../../data/ecoData.json");
 
-const DEFAULT_DATA = {
-  players: {},
-  village: {
-    level: 1,
-    xp: 0,
-    xpToNext: 50,
-    nextLevelRequirement: 100,
-    xpRemaining: 100,
-    calmness: 50,
-    weather: "Sunny",
-    season: "Spring",
-    resources: {},
-    structures: {},
-    progress: {},
-    storage: { level: 1, capacity: 100 },
-    metrics: {
-      totalDonations: 0,
-      unlockedBuildings: 5,
-      rareEvents: 0,
-      lastGrowthScore: 50,
+const { createEnvironmentState, ensureEnvironmentState } = require("./environment");
+
+const DEFAULT_DATA = (() => {
+  const now = Date.now();
+  const environment = createEnvironmentState(now);
+  return {
+    players: {},
+    village: {
+      level: 1,
+      xp: 0,
+      xpToNext: 0,
+      nextLevelRequirement: 100,
+      xpRemaining: 100,
+      calmness: 50,
+      ...environment,
+      resources: {},
+      structures: {},
+      progress: {},
+      storage: { level: 1, capacity: 100 },
+      metrics: {
+        totalDonations: 0,
+        unlockedBuildings: 5,
+        rareEvents: 0,
+        lastGrowthScore: 0,
+      },
     },
-  },
-};
+  };
+})();
 
 function ensureVillageDefaults(data) {
   if (!data.village) data.village = { ...DEFAULT_DATA.village };
@@ -39,6 +44,7 @@ function ensureVillageDefaults(data) {
     (v.metrics?.totalDonations || 0);
   if (typeof v.xpToNext !== "number") v.xpToNext = currentGrowth;
   if (typeof v.calmness !== "number") v.calmness = 50;
+  ensureEnvironmentState(v, Date.now());
   if (!v.resources) v.resources = {};
   if (!v.structures) v.structures = {};
   if (!v.progress) v.progress = {};

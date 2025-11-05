@@ -1,29 +1,24 @@
 {
-  "players": {
-    "946346329783803945": {
-      "inventory": {
-        "stone": 0
-      },
-      "money": 0,
-      "calmness": 50,
-      "gathers": [
-        1762383327069
-      ],
-      "xp": null
-    }
-  },
+  "players": {},
   "village": {
     "level": 1,
-    "xp": 1,
-    "xpToNext": 51,
+    "xp": 0,
+    "xpToNext": 0,
     "nextLevelRequirements": 100,
-    "xpRemaining": 99,
-    "calmness": 50,
-    "weather": "Sunny",
-    "season": "Spring",
-    "resources": {
-      "stone": 1
+    "xpRemaining": 100,
+    "calmness": 0,
+    "weather": {
+      "type": "Sunny",
+      "nextChange": null,
+      "changedAt": null
     },
+    "season": "Spring",
+    "seasonChangeAt": null,
+    "seasonChangedAt": null,
+    "time": "Day",
+    "timeChangeAt": null,
+    "timeChangedAt": null,
+    "resources": {},
     "progress": {},
     "structures": {},
     "storage": {
@@ -31,10 +26,10 @@
       "capacity": 100
     },
     "metrics": {
-      "totalDonations": 1,
+      "totalDonations": 0,
       "unlockedBuildings": 5,
       "rareEvents": 0,
-      "lastGrowthScore": 51
+      "lastGrowthScore": 0
     },
     "nextLevelRequirement": 100
   }

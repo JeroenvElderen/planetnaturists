@@ -8,11 +8,17 @@ const {
   formatLevelUpSummary,
 } = require("./utils");
 const { refreshVillageEmbed } = require("../villageUpdater");
+const {
+  computeGatherOutcome,
+  computeRelaxOutcome,
+} = require("./environment");
 
 function gather(uid, username, client) {
   const data = loadData();
   ensureResources(data);
   const player = getPlayer(data, uid);
+
+  if (typeof player.xp !== "number") player.xp = 0;
 
   const LIMIT = 5;
   const now = Date.now();
@@ -24,26 +30,67 @@ function gather(uid, username, client) {
 
   const res =
     config.resources[Math.floor(Math.random() * config.resources.length)];
-  const amount = Math.floor(Math.random() * (res.max - res.min + 1)) + res.min;
+  let amount = Math.floor(Math.random() * (res.max - res.min + 1)) + res.min;
+  let xpGain = config.xpPerGather;
+  const notes = [];
+
+  const outcome = computeGatherOutcome({
+    resource: res,
+    baseAmount: amount,
+    baseXp: xpGain,
+    village: data.village,
+  });
+
+  if (outcome.blockedMessage) {
+    saveData(data);
+    return `🌬️ ${username} tried to gather, but ${outcome.blockedMessage}`;
+  }
+
+  amount = outcome.amount;
+  xpGain = outcome.xp;
+  notes.push(...outcome.notes);
 
   player.inventory[res.name] = (player.inventory[res.name] || 0) + amount;
-  player.xp += config.xpPerGather;
+  player.xp += xpGain;
 
   saveData(data);
   if (client) refreshVillageEmbed(client);
 
+  const detail = notes.length ? `\n${notes.join("\n")}` : "";
   return `${res.emoji} **${username}** gathered ${amount} ${
     res.name
-  }! (Total: ${player.inventory[res.name]})`;
+  }! (Total: ${player.inventory[res.name]}) +${xpGain} XP${detail}`;
 }
 
 function relax(uid, username, client) {
   const data = loadData();
   const player = getPlayer(data, uid);
 
-  player.calm += config.calmPerRelax;
-  player.xp += config.xpPerRelax;
-  data.village.calmness = Math.min(100, data.village.calmness + 1);
+  if (typeof player.calm !== "number") player.calm = 0;
+  if (typeof player.xp !== "number") player.xp = 0;
+
+  let calmGain = config.calmPerRelax;
+  const xpGain = config.xpPerRelax;
+  const notes = [];
+
+  const relaxOutcome = computeRelaxOutcome({
+    baseCalm: calmGain,
+    baseXp: xpGain,
+    village: data.village,
+  });
+
+  calmGain = relaxOutcome.calm;
+  xpGain = relaxOutcome.xp;
+  notes.push(...relaxOutcome.notes);
+
+  const extraVillageCalm = Math.max(0, calmGain - config.calmPerRelax);
+
+  player.calm += calmGain;
+  player.xp += xpGain;
+  data.village.calmness = Math.min(
+    100,
+    data.village.calmness + 1 + extraVillageCalm
+  );
 
   const leveledUp = calculateVillageLevel(data);
   saveData(data);
@@ -53,7 +100,8 @@ function relax(uid, username, client) {
     ? `\n${formatLevelUpSummary(data.village)}`
     : "";
 
-  return `🧘 ${username} relaxes. +${config.calmPerRelax} Calm, +${config.xpPerRelax} XP 🌞${levelMessage}`;
+  const detail = notes.length ? `\n${notes.join("\n")}` : "";
+  return `🧘 ${username} relaxes. +${calmGain} Calm, +${xpGain} XP 🌞${detail}${levelMessage}`;
 }
 
 function status() {

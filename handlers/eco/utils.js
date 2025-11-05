@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const DATA_PATH = path.join(__dirname, "../../data/ecoData.json");
+const { createEnvironmentState, ensureEnvironmentState } = require("./environment");
 
 function loadData() {
   if (!fs.existsSync(DATA_PATH)) {
@@ -12,6 +13,7 @@ function loadData() {
         xp: 0,
         xpToNext: 50,
         calmness: 50,
+        ...createEnvironmentState(Date.now()),
         resources: {},
         structures: {},
         progress: {},
@@ -37,6 +39,7 @@ function loadData() {
   if (typeof v.level !== "number") v.level = 1;
   if (typeof v.xp !== "number") v.xp = 0;
   if (typeof v.calmness !== "number") v.calmness = 50;
+  ensureEnvironmentState(v, Date.now());
   if (!v.resources) v.resources = {};
   if (!v.structures) v.structures = {};
   if (!v.progress) v.progress = {};

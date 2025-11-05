@@ -3,7 +3,18 @@
     "resources": {},
     "structures": {},
     "calmness": 100,
-    "progress": {}
+    "progress": {},
+    "weather": {
+      "type": "Sunny",
+      "nextChange": null,
+      "changedAt": null
+    },
+    "season": "Spring",
+    "seasonChangeAt": null,
+    "seasonChangedAt": null,
+    "time": "Day",
+    "timeChangeAt": null,
+    "timeChangedAt": null
   },
   "players": {}
 }

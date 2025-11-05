@@ -18,7 +18,7 @@ async function executeEco(interaction) {
       msg = eco.gather(user.id, user.username, client);
       break;
     case "relax":
-      msg = eco.relax(user.id, user.username);
+      msg = eco.relax(user.id, user.username, client);
       break;
     case "inventory":
       msg = eco.inventory(user.id);
@@ -124,13 +124,25 @@ async function handleReset(interaction, client) {
   if (!OWNER_IDS.includes(userId)) {
     return "🚫 You don’t have permission to reset the EcoVillage.";
   }
-
+  
+  const now = Date.now();
   const defaultData = {
     village: {
       resources: {},
       structures: {},
       calmness: 100,
       progress: {},
+      weather: {
+        type: "Sunny",
+        nextChange: now + 4 * 60 * 60 * 1000,
+        changedAt: now,
+      },
+      season: "Spring",
+      seasonChangeAt: now + 24 * 60 * 60 * 1000,
+      seasonChangedAt: now,
+      time: "Day",
+      timeChangeAt: now + 6 * 60 * 60 * 1000,
+      timeChangedAt: now,
     },
     players: {},
   };

@@ -2,6 +2,18 @@
 const { EmbedBuilder } = require("discord.js");
 const { loadData } = require("./data");
 const config = require("../../config/ecoConfig");
+const { getEnvironmentSnapshot } = require("./environment");
+
+function formatDuration(ms) {
+  if (typeof ms !== "number") return "—";
+  if (ms <= 0) return "changing soon";
+  const totalMinutes = Math.round(ms / (60 * 1000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours && minutes) return `${hours}h ${minutes}m remaining`;
+  if (hours) return `${hours}h remaining`;
+  return `${Math.max(1, minutes)}m remaining`;
+}
 
 // Progress bar
 function progressBar(pct) {
@@ -19,6 +31,7 @@ function getLevelName(level) {
 
 function generateVillageEmbed() {
   const data = loadData();
+  const now = Date.now();
   const calmness = data.village.calmness ?? 50;
   const level = data.village.level ?? 1;
   const structuresBuilt = Object.keys(data.village.structures || {}).length;
@@ -63,10 +76,31 @@ function generateVillageEmbed() {
 
   const nonEmptyResources = resources.filter(([_, qty]) => qty > 0);
 
+  const environment = getEnvironmentSnapshot(data.village, now);
+  const { season: seasonInfo, weather: weatherInfo, time: timeInfo, timers } =
+    environment;
+
+  const weatherRemaining = formatDuration(timers.weather);
+  const seasonRemaining = formatDuration(timers.season);
+  const timeRemaining = formatDuration(timers.time);
+
+  const climateSummary = [
+    `${seasonInfo.emoji} **Season:** ${seasonInfo.name} — ${seasonInfo.effect} (${seasonRemaining})`,
+    `${weatherInfo.emoji} **Weather:** ${weatherInfo.type} — ${weatherInfo.effect} (${weatherRemaining})`,
+    `${timeInfo.emoji} **Time:** ${timeInfo.name} — ${timeInfo.effect} (${timeRemaining})`,
+  ].join("\n");
+
   const embed = new EmbedBuilder()
-    .setColor("#7BC47F")
-    .setTitle(`🏡 EcoVillage — Level ${level} (${getLevelName(level)})`)
+    .setColor(timeInfo.color || seasonInfo.color || "#7BC47F")
+    .setTitle(
+      `${seasonInfo.emoji} EcoVillage — Level ${level} (${getLevelName(level)})`
+    )
     .addFields(
+      {
+        name: "🌦️ Village Climate",
+        value: `${climateSummary}\n\u200B`,
+        inline: false,
+      },
       {
         name: "💚 Serenity Level",
         value: `**${calmness}% Calmness** — ${

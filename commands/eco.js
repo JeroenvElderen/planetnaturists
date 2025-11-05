@@ -5,77 +5,173 @@ const eco = require("../handlers/ecoHandler");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("eco")
-    .setDescription("Play the EcoVillage cooperative game")
+    .setDescription("Play the EcoVillage cooperative roleplay game")
 
-    // 🌾 Basic actions
-    .addSubcommand(sub => sub.setName("gather").setDescription("Gather resources"))
-    .addSubcommand(sub => sub.setName("relax").setDescription("Relax and raise calmness"))
-
-    // 🎒 Inventory & donations
-    .addSubcommand(sub => sub.setName("inventory").setDescription("View your personal inventory"))
-    .addSubcommand(sub =>
-      sub.setName("donate")
-        .setDescription("Contribute resources to the shared village")
-        .addStringOption(o =>
-          o.setName("resource").setDescription("Resource name").setRequired(true))
-        .addIntegerOption(o =>
-          o.setName("amount").setDescription("Amount to donate").setRequired(true))
+    // 🌾 Basic Actions
+    .addSubcommand((sub) =>
+      sub.setName("gather").setDescription("Gather natural resources")
+    )
+    .addSubcommand((sub) =>
+      sub.setName("relax").setDescription("Relax and restore calmness")
     )
 
-    // ⚒️ Crafting system
-    .addSubcommand(sub =>
-      sub.setName("combine")
-        .setDescription("Craft new materials")
-        .addStringOption(o =>
-          o.setName("recipe").setDescription("Recipe name").setRequired(true))
+    // 🎒 Inventory & Donations
+    .addSubcommand((sub) =>
+      sub.setName("inventory").setDescription("View your personal inventory")
     )
-    .addSubcommand(sub => sub.setName("recipes").setDescription("List available crafting recipes"))
+    .addSubcommand((sub) =>
+      sub
+        .setName("donate")
+        .setDescription("Donate resources to help the EcoVillage grow")
+        .addStringOption((o) =>
+          o
+            .setName("resource")
+            .setDescription("Resource name")
+            .setRequired(true)
+        )
+        .addIntegerOption((o) =>
+          o
+            .setName("amount")
+            .setDescription("Amount to donate")
+            .setRequired(true)
+        )
+    )
 
-    // 🏗️ Building system
-    .addSubcommand(sub => sub.setName("buildlist").setDescription("Show available buildings to construct"))
-    .addSubcommand(sub =>
-      sub.setName("build")
+    // ⚒️ Crafting
+    .addSubcommand((sub) =>
+      sub
+        .setName("combine")
+        .setDescription("Craft new materials from existing resources")
+        .addStringOption((o) =>
+          o.setName("recipe").setDescription("Recipe name").setRequired(true)
+        )
+    )
+    .addSubcommand((sub) =>
+      sub.setName("recipes").setDescription("List available crafting recipes")
+    )
+
+    // 🏗️ Building
+    .addSubcommand((sub) =>
+      sub.setName("buildlist").setDescription("Show available buildings")
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("build")
         .setDescription("Help construct a chosen building")
-        .addStringOption(o =>
-          o.setName("name").setDescription("Building key or name").setRequired(true))
+        .addStringOption((o) =>
+          o
+            .setName("name")
+            .setDescription("Building name or key")
+            .setRequired(true)
+        )
     )
 
-    // 🌿 Village & leaderboard
-    .addSubcommand(sub => sub.setName("status").setDescription("Check EcoVillage status"))
-    .addSubcommand(sub => sub.setName("top").setDescription("Show leaderboard"))
+    // 🌿 Village Overview
+    .addSubcommand((sub) =>
+      sub
+        .setName("status")
+        .setDescription("Check village resources and calmness")
+    )
+    .addSubcommand((sub) =>
+      sub.setName("top").setDescription("Show helper leaderboard")
+    )
 
-    // 🪪 Player & village extensions
-    .addSubcommand(sub => sub.setName("statuscard").setDescription("Show your player status card"))
-    .addSubcommand(sub => sub.setName("progress").setDescription("Show global building progress"))
-    .addSubcommand(sub =>
-      sub.setName("trade")
+    // 🪪 Player Extensions
+    .addSubcommand((sub) =>
+      sub.setName("statuscard").setDescription("Show your player status card")
+    )
+    .addSubcommand((sub) =>
+      sub.setName("progress").setDescription("Show global building progress")
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("trade")
         .setDescription("Trade resources with another player")
-        .addUserOption(o => o.setName("target").setDescription("Player to trade with").setRequired(true))
-        .addStringOption(o => o.setName("resource").setDescription("Resource name").setRequired(true))
-        .addIntegerOption(o => o.setName("amount").setDescription("Amount to trade").setRequired(true))
+        .addUserOption((o) =>
+          o
+            .setName("target")
+            .setDescription("Player to trade with")
+            .setRequired(true)
+        )
+        .addStringOption((o) =>
+          o
+            .setName("resource")
+            .setDescription("Resource name")
+            .setRequired(true)
+        )
+        .addIntegerOption((o) =>
+          o
+            .setName("amount")
+            .setDescription("Amount to trade")
+            .setRequired(true)
+        )
     )
-    .addSubcommand(sub => sub.setName("house").setDescription("View your house"))
+
+    // 🏡 Home System
+    .addSubcommand((sub) =>
+      sub.setName("house").setDescription("View your cozy house")
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("catalog")
+        .setDescription("Browse furniture, decor, and plants")
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("buyitem")
+        .setDescription("Buy an item for your house")
+        .addStringOption((o) =>
+          o
+            .setName("type")
+            .setDescription("furniture/decor/plant")
+            .setRequired(true)
+        )
+        .addStringOption((o) =>
+          o
+            .setName("name")
+            .setDescription("Item key from catalog")
+            .setRequired(true)
+        )
+    )
 
     // 💰 Economy
-    .addSubcommand(sub => sub.setName("earn").setDescription("Earn coins by helping the village"))
-    .addSubcommand(sub =>
-      sub.setName("buy")
-        .setDescription("Buy resources from the village store")
-        .addStringOption(o => o.setName("resource").setDescription("Resource to buy").setRequired(true))
-        .addIntegerOption(o => o.setName("amount").setDescription("Amount to buy").setRequired(true))
+    .addSubcommand((sub) =>
+      sub.setName("earn").setDescription("Earn coins by helping the village")
     )
-    .addSubcommand(sub =>
-      sub.setName("sell")
-        .setDescription("Sell resources to the village store")
-        .addStringOption(o => o.setName("resource").setDescription("Resource to sell").setRequired(true))
-        .addIntegerOption(o => o.setName("amount").setDescription("Amount to sell").setRequired(true))
+    .addSubcommand((sub) =>
+      sub
+        .setName("buy")
+        .setDescription("Buy resources from the store")
+        .addStringOption((o) =>
+          o
+            .setName("resource")
+            .setDescription("Resource to buy")
+            .setRequired(true)
+        )
+        .addIntegerOption((o) =>
+          o.setName("amount").setDescription("Amount to buy").setRequired(true)
+        )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("sell")
+        .setDescription("Sell your resources to the store")
+        .addStringOption((o) =>
+          o
+            .setName("resource")
+            .setDescription("Resource to sell")
+            .setRequired(true)
+        )
+        .addIntegerOption((o) =>
+          o.setName("amount").setDescription("Amount to sell").setRequired(true)
+        )
     ),
 
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
     const user = interaction.user;
 
-    // 🌿 Restrict all EcoVillage commands to one channel
+    // Restrict all EcoVillage commands to one channel
     const allowedChannelId = "1435568091290402836";
     if (interaction.channelId !== allowedChannelId) {
       return interaction.reply({
@@ -85,18 +181,13 @@ module.exports = {
     }
 
     try {
-      const isPrivate = [
-        "inventory", "buildlist", "recipes", "combine",
-        "top", "statuscard", "house"
-      ].includes(sub);
+      // 🌿 All commands private
+      await interaction.deferReply({ ephemeral: true });
 
-      await interaction.deferReply({ ephemeral: isPrivate });
       let msg;
-
-      // 🔹 Command routing
       switch (sub) {
         case "gather":
-          msg = eco.gather(user.id, user.username);
+          msg = eco.gather(user.id, user.username, interaction.client);
           break;
         case "relax":
           msg = eco.relax(user.id, user.username);
@@ -109,7 +200,8 @@ module.exports = {
             user.id,
             user.username,
             interaction.options.getString("resource").toLowerCase(),
-            interaction.options.getInteger("amount")
+            interaction.options.getInteger("amount"),
+            interaction.client
           );
           break;
         case "combine":
@@ -129,7 +221,8 @@ module.exports = {
           msg = eco.buildSpecific(
             user.id,
             user.username,
-            interaction.options.getString("name").toLowerCase()
+            interaction.options.getString("name").toLowerCase(),
+            interaction.client
           );
           break;
         case "status":
@@ -155,6 +248,17 @@ module.exports = {
         case "house":
           msg = eco.house(user.id, user.username);
           break;
+        case "catalog":
+          msg = eco.showCatalog();
+          break;
+        case "buyitem":
+          msg = eco.buyItem(
+            user.id,
+            user.username,
+            interaction.options.getString("type").toLowerCase(),
+            interaction.options.getString("name").toLowerCase()
+          );
+          break;
         case "earn":
           msg = eco.earn(user.id, 10, "helping the village");
           break;
@@ -174,15 +278,20 @@ module.exports = {
           break;
         default:
           msg = "❓ Unknown command.";
-          break;
       }
 
-      // 🕒 Auto delete after 20 seconds
-      await interaction.editReply(msg);
-      setTimeout(async () => {
-        try { await interaction.deleteReply(); } catch {}
-      }, 20000);
+      // ✅ Send private reply silently
+      await interaction.editReply({
+        content: msg,
+        allowedMentions: { parse: [] }, // 🚫 No pings, ever
+      });
 
+      // 🕒 Auto delete after 15s
+      setTimeout(async () => {
+        try {
+          await interaction.deleteReply();
+        } catch {}
+      }, 15000);
     } catch (err) {
       console.error(err);
       if (!interaction.replied) {

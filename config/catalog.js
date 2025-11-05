@@ -1,0 +1,45 @@
+// config/catalog.js
+module.exports = {
+  furniture: {
+    wooden_chair: { name: "Wooden Chair", price: 60, emoji: "🪑" },
+    oak_table: { name: "Oak Table", price: 120, emoji: "🪵" },
+    hammock: { name: "Hammock", price: 150, emoji: "🪶" },
+    bookshelf: { name: "Bookshelf", price: 110, emoji: "📚" },
+    cozy_bed: { name: "Cozy Bed", price: 180, emoji: "🛏️" },
+    lounge_chair: { name: "Lounge Chair", price: 140, emoji: "🪷" },
+    meditation_mat: { name: "Meditation Mat", price: 90, emoji: "🧘" },
+    outdoor_bench: { name: "Outdoor Bench", price: 100, emoji: "🪵" },
+    fire_pit: { name: "Fire Pit", price: 200, emoji: "🔥" },
+    canopy_bed: { name: "Canopy Bed", price: 220, emoji: "🌙" },
+    wooden_deck: { name: "Wooden Deck Extension", price: 250, emoji: "🪵✨" },
+  },
+
+  decor: {
+    candle: { name: "Candle", price: 25, emoji: "🕯️" },
+    painting: { name: "Painting", price: 90, emoji: "🖼️" },
+    lamp: { name: "Lamp", price: 70, emoji: "💡" },
+    rug: { name: "Rug", price: 60, emoji: "🧶" },
+    wind_chime: { name: "Wind Chime", price: 40, emoji: "🎐" },
+    crystal_orb: { name: "Crystal Orb", price: 100, emoji: "🔮" },
+    incense_holder: { name: "Incense Holder", price: 35, emoji: "🪔" },
+    mirror: { name: "Wall Mirror", price: 85, emoji: "🪞" },
+    dreamcatcher: { name: "Dreamcatcher", price: 55, emoji: "🕸️" },
+    seashell_art: { name: "Seashell Wall Art", price: 45, emoji: "🐚" },
+    sand_timer: { name: "Sand Timer", price: 30, emoji: "⏳" },
+    lanterns: { name: "Hanging Lanterns", price: 65, emoji: "🏮" },
+  },
+
+  plants: {
+    bonsai: { name: "Bonsai Tree", price: 70, emoji: "🌳" },
+    sunflower: { name: "Sunflower Pot", price: 55, emoji: "🌻" },
+    cactus: { name: "Cactus", price: 40, emoji: "🌵" },
+    fern: { name: "Fern", price: 50, emoji: "🌿" },
+    lily: { name: "Lily Plant", price: 65, emoji: "🌸" },
+    aloe: { name: "Aloe Vera", price: 45, emoji: "🌱" },
+    bamboo: { name: "Bamboo Plant", price: 80, emoji: "🎋" },
+    lavender: { name: "Lavender Pot", price: 60, emoji: "💜" },
+    ivy: { name: "Hanging Ivy", price: 50, emoji: "🌿🪴" },
+    palm: { name: "Small Palm Tree", price: 90, emoji: "🌴" },
+    lotus: { name: "Lotus Bowl", price: 100, emoji: "🌺" },
+  },
+};

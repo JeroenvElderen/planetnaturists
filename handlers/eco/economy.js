@@ -1,35 +1,87 @@
-const { loadData, saveData, getPlayer } = require("./data");
+// handlers/eco/economy.js
+const { loadData, saveData } = require("./data");
+const { getPlayer } = require("./utils");
 const config = require("../../config/ecoConfig");
 
-function earn(uid, amount, reason = "work") {
+// 🌞 Earn random coins for naturist-friendly community tasks (limit: 5/hour)
+function earn(uid, username) {
   const data = loadData();
   const player = getPlayer(data, uid);
-  player.money += amount;
+
+  const LIMIT = 5;
+  const now = Date.now();
+  player.earns = (player.earns || []).filter(t => now - t < 3600000); // within last hour
+
+  if (player.earns.length >= LIMIT) {
+    return `🕒 **${username}**, you’ve already helped out plenty this hour!  
+Take a dip in the lake or join a yoga session 🌊 (limit ${LIMIT}/hour).`;
+  }
+
+  player.earns.push(now);
+
+  // 🌿 Naturist-friendly earning activities
+  const jobs = [
+    { action: "helped maintain the sun garden", min: 6, max: 14 },
+    { action: "welcomed new guests to the naturist camp", min: 7, max: 15 },
+    { action: "cleaned the natural lake area", min: 8, max: 18 },
+    { action: "organized a sunrise yoga session by the beach", min: 10, max: 20 },
+    { action: "set up hammocks near the relaxation grove", min: 7, max: 16 },
+    { action: "guided visitors through the peaceful forest trail", min: 9, max: 19 },
+    { action: "helped restore the wooden paths near the spa", min: 8, max: 17 },
+    { action: "prepared a fruit and herbal drink stand", min: 6, max: 14 },
+    { action: "arranged towels at the sun deck for guests", min: 10, max: 21 },
+    { action: "collected smooth river stones for the garden pond", min: 9, max: 18 },
+    { action: "trimmed plants around the naturist park walkways", min: 8, max: 17 },
+  ];
+
+  // 🎲 Pick a random job and calculate reward
+  const job = jobs[Math.floor(Math.random() * jobs.length)];
+  const reward = Math.floor(Math.random() * (job.max - job.min + 1)) + job.min;
+
+  player.money = (player.money || 0) + reward;
   saveData(data);
-  return `💰 You earned ${amount} coins for ${reason}! Balance: ${player.money}`;
+
+  return `🌞 **${username}** ${job.action} and earned **${reward} coins!**  
+💰 Balance: ${player.money} coins (${player.earns.length}/${LIMIT} this hour).`;
 }
 
+// 🛒 Buy resources from the village store
 function buy(uid, resource, amount) {
   const data = loadData();
   const player = getPlayer(data, uid);
-  const price = (config.store?.prices?.[resource] ?? 5) * amount;
-  if (player.money < price) return `❌ Not enough money. Need ${price} 💰.`;
-  player.money -= price;
+
+  const unitPrice = config.store?.prices?.[resource] ?? 5;
+  const totalPrice = unitPrice * amount;
+
+  if (player.money < totalPrice)
+    return `❌ Not enough money. You need **${totalPrice} coins** to buy ${amount} ${resource}.`;
+
+  player.money -= totalPrice;
   player.inventory[resource] = (player.inventory[resource] || 0) + amount;
   saveData(data);
-  return `🛒 You bought ${amount} ${resource} for ${price} 💰.`;
+
+  return `🛒 You bought **${amount} ${resource}** for **${totalPrice} coins**.  
+💰 Remaining balance: ${player.money}.`;
 }
 
+// 💵 Sell resources to the village store
 function sell(uid, resource, amount) {
   const data = loadData();
   const player = getPlayer(data, uid);
+
   const have = player.inventory[resource] || 0;
-  if (have < amount) return `❌ You only have ${have} ${resource}.`;
-  const price = (config.store?.prices?.[resource] ?? 5) * amount;
+  if (have < amount)
+    return `❌ You only have **${have} ${resource}** available to sell.`;
+
+  const unitPrice = config.store?.prices?.[resource] ?? 5;
+  const totalPrice = unitPrice * amount;
+
   player.inventory[resource] -= amount;
-  player.money += price;
+  player.money = (player.money || 0) + totalPrice;
   saveData(data);
-  return `💵 Sold ${amount} ${resource} for ${price} 💰.`;
+
+  return `💵 You sold **${amount} ${resource}** for **${totalPrice} coins**.  
+💰 New balance: ${player.money}.`;
 }
 
 module.exports = { earn, buy, sell };

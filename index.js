@@ -18,11 +18,15 @@ const {
 const { postDailyWouldYouRather } = require("./handlers/dailyWouldYouRatherHandler");
 const { postDailyThisOrThat } = require("./handlers/dailyThisOrThatHandler");
 
+// 🌿 EcoVillage Embed Updater
+const { scheduleVillageUpdates } = require("./handlers/villageUpdater");
+
 // 🧩 Slash command files
 const verifyVideo = require("./commands/verifyVideo");
 const createCountryRoles = require("./commands/createCountryRoles");
 const eco = require("./commands/eco");
-// 🌐 Start Express keep-alive server
+
+// 🌐 Keep-alive for hosting
 setupKeepAlive();
 
 // 🧠 Load emoji-role map
@@ -49,6 +53,9 @@ client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   await registerSlashCommands();
   await initVideoRequestMessage(client);
+
+  // 🏡 Start EcoVillage embed auto-updater (every 5 min)
+  scheduleVillageUpdates(client);
 
   // 🌴 Post both polls immediately at startup
   await postDailyWouldYouRather(client);

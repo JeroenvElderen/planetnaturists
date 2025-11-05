@@ -2,6 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const config = require("../../config/ecoConfig");
 const { loadData, saveData } = require("./data");
 const { ensureResources, getPlayer } = require("./utils");
+const { refreshVillageEmbed } = require("../villageUpdater");
 
 function buildList() {
   const data = loadData();
@@ -15,7 +16,11 @@ function buildList() {
   for (const [key, b] of Object.entries(config.buildings)) {
     const done = data.village.structures[key];
     if (done) {
-      embed.addFields({ name: `${b.emoji} ${b.name}`, value: `✅ Completed by ${done.builtBy}`, inline: false });
+      embed.addFields({
+        name: `${b.emoji} ${b.name}`,
+        value: `✅ Completed by ${done.builtBy}`,
+        inline: false
+      });
       continue;
     }
 
@@ -32,14 +37,14 @@ function buildList() {
     embed.addFields({
       name: `${b.emoji} ${b.name} (${key})`,
       value: `**Progress:** ${pct}%\n${lines.join("\n")}\n🔨 Use /eco build name:${key}`,
-      inline: false,
+      inline: false
     });
   }
 
   return { embeds: [embed] };
 }
 
-function buildSpecific(uid, username, key) {
+function buildSpecific(uid, username, key, client) {
   const data = loadData();
   ensureResources(data);
 
@@ -57,16 +62,14 @@ function buildSpecific(uid, username, key) {
     }
   }
 
-  if (!building)
-    return `❌ No building named **${key}**. Use \`/eco buildlist\`.`;
+  if (!building) return `❌ No building named **${key}**. Use \`/eco buildlist\`.`;
 
   if (!data.village.progress) data.village.progress = {};
   if (!data.village.progress[realKey])
     data.village.progress[realKey] = Object.fromEntries(Object.entries(building.cost).map(([r, q]) => [r, 0]));
 
   const progress = data.village.progress[realKey];
-  if (data.village.structures[realKey])
-    return `✅ **${building.name}** is already completed!`;
+  if (data.village.structures[realKey]) return `✅ **${building.name}** is already completed!`;
 
   let contributed = false;
   let completed = true;
@@ -87,20 +90,22 @@ function buildSpecific(uid, username, key) {
     if (progress[res] < need) completed = false;
   }
 
-  if (!contributed)
-    return `🧱 No available materials for **${building.name}**. Use /eco donate first.`;
-
-  if (completed) {
+  let msg;
+  if (!contributed) {
+    msg = `🧱 No available materials for **${building.name}**. Use /eco donate first.`;
+  } else if (completed) {
     data.village.structures[realKey] = { name: building.name, builtBy: username, at: Date.now() };
     const player = getPlayer(data, uid);
     player.xp += building.reward.xp;
     data.village.calmness = Math.min(100, data.village.calmness + building.reward.calm);
-    saveData(data);
-    return `🎉 **${building.name}** completed by ${username}! +${building.reward.xp} XP 🌿`;
+    msg = `🎉 **${building.name}** completed by ${username}! +${building.reward.xp} XP 🌿`;
+  } else {
+    msg = `🏗️ **${building.name}** progress updated:\n${report.join("\n")}`;
   }
 
   saveData(data);
-  return `🏗️ **${building.name}** progress updated:\n${report.join("\n")}`;
+  if (client) refreshVillageEmbed(client);
+  return msg;
 }
 
 module.exports = { buildList, buildSpecific };

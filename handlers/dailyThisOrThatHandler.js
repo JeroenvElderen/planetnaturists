@@ -5,6 +5,20 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const THIS_OR_THAT_CHANNEL_ID = "1434963096283250819";
 const STATE_PATH = path.join(__dirname, "../data/thisOrThatState.json");
+const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+const MIN_RETRY_DELAY = 5 * 60 * 1000;
+
+let thisOrThatTimeout = null;
+
+function scheduleNextThisOrThat(client, delay = TWENTY_FOUR_HOURS) {
+  if (thisOrThatTimeout) clearTimeout(thisOrThatTimeout);
+  const nextDelay = Math.max(delay, MIN_RETRY_DELAY);
+  thisOrThatTimeout = setTimeout(() => {
+    postDailyThisOrThat(client).catch((err) =>
+      console.error("❌ Failed scheduled 'This or That' run:", err)
+    );
+  }, nextDelay);
+}
 
 async function generateThisOrThat() {
   const prompt = `
@@ -31,47 +45,92 @@ Keep it under 25 words.
 }
 
 async function postDailyThisOrThat(client) {
-  const channel = await client.channels.fetch(THIS_OR_THAT_CHANNEL_ID);
-  if (!channel) return console.error("❌ Channel not found");
+  let nextDelay = TWENTY_FOUR_HOURS;
 
-  let state = { lastMessageId: null, lastPostedAt: 0 };
-  if (fs.existsSync(STATE_PATH)) state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
-
-  const now = Date.now();
-  const twentyFourHours = 24 * 60 * 60 * 1000;
-  if (now - state.lastPostedAt < twentyFourHours && state.lastMessageId) {
-    console.log("⏱️ Previous 'This or That' still active; skipping new post.");
-    return;
-  }
-
-  if (state.lastMessageId) {
+  try {
+    let channel;
     try {
-      const oldMsg = await channel.messages.fetch(state.lastMessageId);
-      if (oldMsg) await oldMsg.delete();
-      console.log("🗑️ Deleted previous 'This or That' poll.");
-    } catch {
-      console.log("ℹ️ Previous poll already deleted or missing.");
+      channel = await client.channels.fetch(THIS_OR_THAT_CHANNEL_ID);
+    } catch (err) {
+      console.error("❌ Unable to fetch 'This or That' channel:", err);
+      nextDelay = MIN_RETRY_DELAY;
+      return false;
     }
+
+    if (!channel) {
+      console.error("❌ 'This or That' channel not found");
+      nextDelay = MIN_RETRY_DELAY;
+      return false;
+    }
+
+    let state = { lastMessageId: null, lastPostedAt: 0 };
+    if (fs.existsSync(STATE_PATH)) {
+      try {
+        state = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
+      } catch (err) {
+        console.error("⚠️ Failed to parse thisOrThatState.json, resetting state.", err);
+        state = { lastMessageId: null, lastPostedAt: 0 };
+      }
+    }
+
+    const now = Date.now();
+    const elapsed = now - (state.lastPostedAt || 0);
+    const remaining = TWENTY_FOUR_HOURS - elapsed;
+
+    let previousMessage = null;
+    if (state.lastMessageId) {
+      try {
+        previousMessage = await channel.messages.fetch(state.lastMessageId);
+      } catch (err) {
+        previousMessage = null;
+        if (elapsed < TWENTY_FOUR_HOURS) {
+          console.log(
+            "ℹ️ Previous 'This or That' poll missing; posting a fresh one early."
+          );
+        }
+      }
+    }
+
+    if (elapsed < TWENTY_FOUR_HOURS && previousMessage) {
+      console.log("⏱️ Previous 'This or That' still active; skipping new post.");
+      nextDelay = Math.max(remaining, MIN_RETRY_DELAY);
+      return false;
+    }
+
+    if (previousMessage) {
+      try {
+        await previousMessage.delete();
+        console.log("🗑️ Deleted previous 'This or That' poll.");
+      } catch {
+        console.log("ℹ️ Previous poll already deleted or missing.");
+      }
+    }
+
+    console.log("🌞 Posting scheduled 'This or That' poll...");
+    const { optionA, optionB } = await generateThisOrThat();
+    const msg = await channel.send({
+      poll: {
+        question: { text: "This or That" },
+        answers: [{ text: optionA }, { text: optionB }],
+        duration: 24,
+        allowMultiselect: false,
+      },
+    });
+
+    const postedAt = Date.now();
+    fs.writeFileSync(
+      STATE_PATH,
+      JSON.stringify({ lastMessageId: msg.id, lastPostedAt: postedAt }, null, 2)
+    );
+    console.log(`✅ Posted new poll: This or That — ${optionA} vs ${optionB}`);
+    return true;
+  } catch (error) {
+    nextDelay = MIN_RETRY_DELAY;
+    console.error("❌ Error posting 'This or That' poll:", error);
+    return false;
+  } finally {
+    scheduleNextThisOrThat(client, nextDelay);
   }
-
-  console.log("🌞 Posting scheduled 'This or That' poll...");
-  const { optionA, optionB } = await generateThisOrThat();
-  const msg = await channel.send({
-    poll: {
-      question: { text: "This or That" },
-      answers: [{ text: optionA }, { text: optionB }],
-      duration: 24,
-      allowMultiselect: false,
-    },
-  });
-
-  fs.writeFileSync(
-    STATE_PATH,
-    JSON.stringify({ lastMessageId: msg.id, lastPostedAt: now }, null, 2)
-  );
-  console.log(`✅ Posted new poll: This or That — ${optionA} vs ${optionB}`);
-
-  setTimeout(() => postDailyThisOrThat(client), twentyFourHours);
 }
 
 module.exports = { postDailyThisOrThat };

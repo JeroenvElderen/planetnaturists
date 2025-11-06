@@ -12,6 +12,9 @@ const SEED_DEFINITIONS = {
     emoji: "🌻",
     baseGrowth: DAY,
     harvest: { sunflower: 3 },
+    seedYield: 1,
+    seedItem: "sunflower_seed",
+    seedCost: 12,
     xpReward: 18,
     calmReward: 2,
     preferredSeasons: ["Spring", "Summer"],
@@ -26,6 +29,9 @@ const SEED_DEFINITIONS = {
     emoji: "🎃",
     baseGrowth: 2 * DAY,
     harvest: { pumpkin: 2 },
+    seedYield: 1,
+    seedItem: "pumpkin_seed",
+    seedCost: 18,
     xpReward: 28,
     calmReward: 1,
     preferredSeasons: ["Autumn"],
@@ -40,6 +46,9 @@ const SEED_DEFINITIONS = {
     emoji: "💜",
     baseGrowth: 18 * HOUR,
     harvest: { lavender: 5 },
+    seedYield: 1,
+    seedItem: "lavender_seed",
+    seedCost: 14,
     xpReward: 20,
     calmReward: 4,
     preferredSeasons: ["Spring"],
@@ -54,6 +63,9 @@ const SEED_DEFINITIONS = {
     emoji: "🫐",
     baseGrowth: 20 * HOUR,
     harvest: { blueberries: 6 },
+    seedYield: 2,
+    seedItem: "blueberry_seed",
+    seedCost: 16,
     xpReward: 16,
     calmReward: 1,
     preferredSeasons: ["Summer"],
@@ -68,6 +80,9 @@ const SEED_DEFINITIONS = {
     emoji: "🌵",
     baseGrowth: 36 * HOUR,
     harvest: { cactus: 2 },
+    seedYield: 1,
+    seedItem: "cactus_seed",
+    seedCost: 22,
     xpReward: 22,
     calmReward: 3,
     preferredSeasons: ["Summer"],
@@ -82,6 +97,9 @@ const SEED_DEFINITIONS = {
     emoji: "🌸",
     baseGrowth: 30 * HOUR,
     harvest: { lotus_bloom: 3 },
+    seedYield: 1,
+    seedItem: "lotus_seed",
+    seedCost: 24,
     xpReward: 24,
     calmReward: 5,
     preferredSeasons: ["Spring", "Summer"],
@@ -96,6 +114,9 @@ const SEED_DEFINITIONS = {
     emoji: "🎋",
     baseGrowth: 40 * HOUR,
     harvest: { bamboo: 4 },
+    seedYield: 2,
+    seedItem: "bamboo_seed",
+    seedCost: 25,
     xpReward: 26,
     calmReward: 2,
     preferredSeasons: ["Summer", "Autumn"],
@@ -110,6 +131,9 @@ const SEED_DEFINITIONS = {
     emoji: "🍃",
     baseGrowth: 22 * HOUR,
     harvest: { tea_leaves: 5 },
+    seedYield: 1,
+    seedItem: "tea_leaf_seed",
+    seedCost: 15,
     xpReward: 18,
     calmReward: 4,
     preferredSeasons: ["Spring"],
@@ -124,6 +148,9 @@ const SEED_DEFINITIONS = {
     emoji: "🍓",
     baseGrowth: 16 * HOUR,
     harvest: { strawberries: 5 },
+    seedYield: 2,
+    seedItem: "strawberry_seed",
+    seedCost: 14,
     xpReward: 14,
     calmReward: 1,
     preferredSeasons: ["Spring", "Summer"],
@@ -138,6 +165,9 @@ const SEED_DEFINITIONS = {
     emoji: "🍅",
     baseGrowth: 18 * HOUR,
     harvest: { tomatoes: 6 },
+    seedYield: 2,
+    seedItem: "tomato_seed",
+    seedCost: 13,
     xpReward: 15,
     calmReward: 1,
     preferredSeasons: ["Summer"],
@@ -145,6 +175,142 @@ const SEED_DEFINITIONS = {
     preferredWeather: ["Sunny"],
     dislikedWeather: ["Windy"],
     stages: ["Seedling", "Flowering Vine", "Vibrant Cluster"],
+  },
+  carrot: {
+    key: "carrot",
+    displayName: "Carrot",
+    emoji: "🥕",
+    baseGrowth: 14 * HOUR,
+    harvest: { carrots: 5 },
+    seedYield: 2,
+    seedItem: "carrot_seed",
+    seedCost: 9,
+    xpReward: 12,
+    calmReward: 1,
+    preferredSeasons: ["Spring", "Autumn"],
+    dislikedSeasons: ["Winter"],
+    preferredWeather: ["Rainy", "Cloudy"],
+    dislikedWeather: ["Windy"],
+    stages: ["Sprout", "Rooting", "Crunchy Harvest"],
+  },
+  potato: {
+    key: "potato",
+    displayName: "Potato",
+    emoji: "🥔",
+    baseGrowth: 20 * HOUR,
+    harvest: { potatoes: 4 },
+    seedYield: 2,
+    seedItem: "potato_seed",
+    seedCost: 11,
+    xpReward: 14,
+    calmReward: 1,
+    preferredSeasons: ["Spring", "Autumn"],
+    dislikedSeasons: ["Summer"],
+    preferredWeather: ["Cloudy", "Rainy"],
+    dislikedWeather: ["Windy"],
+    stages: ["Sprout", "Leafy Growth", "Tuber Time"],
+  },
+  corn: {
+    key: "corn",
+    displayName: "Corn",
+    emoji: "🌽",
+    baseGrowth: 26 * HOUR,
+    harvest: { corn: 4 },
+    seedYield: 2,
+    seedItem: "corn_seed",
+    seedCost: 15,
+    xpReward: 18,
+    calmReward: 2,
+    preferredSeasons: ["Summer"],
+    dislikedSeasons: ["Winter"],
+    preferredWeather: ["Sunny", "Rainy"],
+    dislikedWeather: ["Windy"],
+    stages: ["Shoot", "Tassel", "Golden Ears"],
+  },
+  coffee: {
+    key: "coffee",
+    displayName: "Coffee",
+    emoji: "☕",
+    baseGrowth: 32 * HOUR,
+    harvest: { coffee_beans: 4 },
+    seedYield: 1,
+    seedItem: "coffee_seed",
+    seedCost: 22,
+    xpReward: 24,
+    calmReward: 3,
+    preferredSeasons: ["Summer"],
+    dislikedSeasons: ["Winter"],
+    preferredWeather: ["Rainy", "Cloudy"],
+    dislikedWeather: ["Windy"],
+    stages: ["Sapling", "Cherry Buds", "Bean Harvest"],
+  },
+  chili: {
+    key: "chili",
+    displayName: "Chili Pepper",
+    emoji: "🌶️",
+    baseGrowth: 22 * HOUR,
+    harvest: { chili_peppers: 5 },
+    seedYield: 2,
+    seedItem: "chili_seed",
+    seedCost: 15,
+    xpReward: 18,
+    calmReward: 2,
+    preferredSeasons: ["Summer"],
+    dislikedSeasons: ["Winter"],
+    preferredWeather: ["Sunny"],
+    dislikedWeather: ["Rainy"],
+    stages: ["Sprout", "Blossom", "Fiery Pods"],
+  },
+  rice: {
+    key: "rice",
+    displayName: "Rice",
+    emoji: "🍚",
+    baseGrowth: 28 * HOUR,
+    harvest: { rice: 5 },
+    seedYield: 2,
+    seedItem: "rice_seed",
+    seedCost: 13,
+    xpReward: 17,
+    calmReward: 2,
+    preferredSeasons: ["Summer"],
+    dislikedSeasons: ["Winter"],
+    preferredWeather: ["Rainy"],
+    dislikedWeather: ["Windy"],
+    stages: ["Shoot", "Flooded Fields", "Golden Grains"],
+  },
+  mint: {
+    key: "mint",
+    displayName: "Mint",
+    emoji: "🌿",
+    baseGrowth: 16 * HOUR,
+    harvest: { mint_leaves: 6 },
+    seedYield: 2,
+    seedItem: "mint_seed",
+    seedCost: 8,
+    xpReward: 13,
+    calmReward: 3,
+    preferredSeasons: ["Spring", "Summer"],
+    dislikedSeasons: ["Winter"],
+    preferredWeather: ["Cloudy", "Rainy"],
+    dislikedWeather: ["Windy"],
+    stages: ["Sprig", "Leafy Patch", "Refreshing Bounty"],
+  },
+  cocoa: {
+    key: "cocoa",
+    displayName: "Cocoa",
+    emoji: "🍫",
+    baseGrowth: 34 * HOUR,
+    harvest: { cocoa_beans: 3 },
+    seedYield: 1,
+    seedItem: "cocoa_seed",
+    seedCost: 23,
+    xpReward: 26,
+    calmReward: 4,
+    preferredSeasons: ["Summer", "Autumn"],
+    dislikedSeasons: ["Winter"],
+    preferredWeather: ["Rainy", "Cloudy"],
+    dislikedWeather: ["Windy"],
+    stages: ["Sapling", "Pods Forming", "Chocolate Harvest"],
   },
 };
 
@@ -171,10 +337,16 @@ const STAGE_THRESHOLDS = [
 const CHECK_INTERVAL = 60 * 1000;
 const MAX_PLOTS = 6;
 
-const seedChoices = Object.values(SEED_DEFINITIONS).map((seed) => ({
-  name: `${seed.emoji} ${seed.displayName}`,
-  value: seed.key,
-}));
+function getSeedItemKey(seed) {
+  return seed.seedItem || `${seed.key}_seed`;
+}
+
+const seedChoices = Object.values(SEED_DEFINITIONS)
+  .sort((a, b) => (a.seedCost || 0) - (b.seedCost || 0))
+  .map((seed) => ({
+    name: `${seed.emoji} ${seed.displayName} (${seed.seedCost || 0}c)`,
+    value: seed.key,
+  }));
 
 function ensureGarden(player) {
   if (!player.garden) player.garden = [];
@@ -196,6 +368,16 @@ function formatDuration(ms) {
 
 function formatSeedList() {
   return seedChoices.map((choice) => choice.name).join(", ");
+}
+
+function findSeedByInventoryItem(itemKey) {
+  return Object.values(SEED_DEFINITIONS).find(
+    (seed) => getSeedItemKey(seed) === itemKey
+  );
+}
+
+function getSeedByKey(seedKey) {
+  return SEED_DEFINITIONS[seedKey];
 }
 
 function calculateGrowthTime(seed, village) {
@@ -243,8 +425,45 @@ function calculateGrowthTime(seed, village) {
   return { growthTime: Math.round(growth), notes };
 }
 
+function randomInt(min, max) {
+  const low = Math.ceil(Math.min(min, max));
+  const high = Math.floor(Math.max(min, max));
+  if (!Number.isFinite(low) || !Number.isFinite(high)) return 0;
+  if (high <= 0) return 0;
+  const rangeMin = Math.max(1, low);
+  const rangeMax = Math.max(rangeMin, high);
+  return Math.floor(Math.random() * (rangeMax - rangeMin + 1)) + rangeMin;
+}
+
+function resolveAmount(definition, fallback) {
+  if (typeof definition === "number") {
+    if (definition <= 0) return 0;
+    const variance = Math.max(1, Math.ceil(definition * 0.25));
+    const min = Math.max(1, definition - variance);
+    const max = definition + variance;
+    return randomInt(min, max);
+  }
+
+  if (typeof definition === "object" && definition) {
+    if (typeof definition.min === "number" && typeof definition.max === "number") {
+      return randomInt(definition.min, definition.max);
+    }
+    if (typeof definition.amount === "number") {
+      return resolveAmount(definition.amount, fallback);
+    }
+  }
+
+  if (typeof fallback === "number") {
+    return resolveAmount(fallback);
+  }
+
+  return 0;
+}
+
 function formatHarvestSummary(yields) {
-  return Object.entries(yields)
+  const entries = Object.entries(yields).filter(([, amount]) => amount > 0);
+  if (!entries.length) return "nothing";
+  return entries
     .map(([item, amount]) => `${amount} ${item}`)
     .join(", ");
 }
@@ -259,12 +478,28 @@ async function plantSeed(uid, username, seedKey) {
   const player = getPlayer(data, uid);
   const garden = ensureGarden(player);
 
+  const seedItemKey = getSeedItemKey(seed);
+  const haveSeeds = player.inventory[seedItemKey] || 0;
+  if (haveSeeds <= 0) {
+    const priceText =
+      typeof seed.seedCost === "number"
+        ? ` for **${seed.seedCost} coins**`
+        : "";
+    return (
+      `🌾 You need ${seed.displayName.toLowerCase()} seeds (${seedItemKey.replace(/_/g, " ")}) to plant this crop.` +
+      ` Use \`/eco buy resource:${seedItemKey} amount:1\`${priceText} or craft more from your harvest via \`/eco recipes\`.`
+    );
+  }
+
   if (garden.length >= MAX_PLOTS) {
     return `🌿 Your garden is full (${MAX_PLOTS} plots). Harvest something before planting more.`;
   }
 
   const now = Date.now();
   const { growthTime, notes } = calculateGrowthTime(seed, data.village);
+
+  player.inventory[seedItemKey] = haveSeeds - 1;
+  if (player.inventory[seedItemKey] <= 0) delete player.inventory[seedItemKey];
 
   garden.push({
     id: `${seed.key}-${now}`,
@@ -276,10 +511,12 @@ async function plantSeed(uid, username, seedKey) {
 
   saveData(data);
 
+  const seedCount = player.inventory[seedItemKey] || 0;
+  const seedStatus = `\n🌰 ${seedCount} ${seed.displayName.toLowerCase()} seeds remaining.`;
   const noteText = notes.length ? `\n${notes.join("\n")}` : "";
   return `${seed.emoji} **${username}**, you planted a ${seed.displayName}!\n⏳ Ready in about ${formatDuration(
     growthTime
-  )}.${noteText}`;
+  )}.${seedStatus}${noteText}`;
 }
 
 async function harvest(uid, username) {
@@ -321,17 +558,33 @@ async function harvest(uid, username) {
   const harvestSummaries = [];
   let totalXp = 0;
   let totalCalm = 0;
+  const seedReturns = [];
 
   for (const plot of ready) {
     const seed = SEED_DEFINITIONS[plot.seed];
     if (!seed) continue;
-    Object.entries(seed.harvest).forEach(([item, amount]) => {
+    const actualHarvest = {};
+    Object.entries(seed.harvest).forEach(([item, amountDef]) => {
+      const amount = resolveAmount(amountDef);
+      if (amount <= 0) return;
       player.inventory[item] = (player.inventory[item] || 0) + amount;
+      actualHarvest[item] = (actualHarvest[item] || 0) + amount;
     });
+    const seedYieldAmount = resolveAmount(seed.seedYield);
+    if (seedYieldAmount > 0) {
+      const seedItemKey = getSeedItemKey(seed);
+      player.inventory[seedItemKey] =
+        (player.inventory[seedItemKey] || 0) + seedYieldAmount;
+      seedReturns.push(`${seedYieldAmount} ${seedItemKey.replace(/_/g, " ")}`);
+    }
     totalXp += seed.xpReward || 0;
     totalCalm += seed.calmReward || 0;
     harvestSummaries.push(
-      `${seed.emoji} ${seed.displayName}: ${formatHarvestSummary(seed.harvest)}`
+      `${seed.emoji} ${seed.displayName}: ${formatHarvestSummary(actualHarvest)}${
+        seedYieldAmount
+          ? ` + ${seedYieldAmount} ${getSeedItemKey(seed).replace(/_/g, " ")}`
+          : ""
+      }`
     );
   }
 
@@ -343,11 +596,14 @@ async function harvest(uid, username) {
 
   const calmText = totalCalm ? ` +${totalCalm} Calm` : "";
   const xpText = totalXp ? ` +${totalXp} XP` : "";
+  const seedText = seedReturns.length
+    ? `\n🌰 Seeds saved: ${seedReturns.join(", ")}`
+    : "";
 
   return (
     `🌾 **${username}** harvested:\n` +
     harvestSummaries.join("\n") +
-    `\nRewards:${xpText}${calmText}`
+    `${seedText}\nRewards:${xpText}${calmText}`
   );
 }
 
@@ -448,4 +704,6 @@ module.exports = {
   scheduleGardenNotifications,
   handleGardenButton,
   checkGardenGrowth,
+  getSeedByKey,
+  findSeedByInventoryItem,
 };

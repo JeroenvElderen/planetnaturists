@@ -1,6 +1,7 @@
 // handlers/eco/economy.js
 const { loadData, saveData } = require("./data");
 const { getPlayer } = require("./utils");
+const { findSeedByInvetoryItem } = require("./garden");
 const config = require("../../config/ecoConfig");
 
 // 🌞 Earn random coins for naturist-friendly community tasks (limit: 5/hour)
@@ -46,26 +47,46 @@ Take a dip in the lake or join a yoga session 🌊 (limit ${LIMIT}/hour).`;
 }
 
 // 🛒 Buy resources from the village store
+function resolvePrice(resource) {
+  const seed = findSeedByInventoryItem(resource);
+  if (seed && typeof seed.seedCost === "number") {
+    return { unitPrice: seed.seedCost, label: `${seed.displayName} seeds` };
+  }
+
+  const unitPrice = config.store?.prices?.[resource];
+  if (typeof unitPrice === "number") {
+    return { unitPrice, label: resource };
+  }
+
+  return { unitPrice: 5, label: resource };
+}
+
 function buy(uid, resource, amount) {
+  if (amount <= 0)
+    return "❌ Please specify an amount of at least 1 to buy.";
+
   const data = loadData();
   const player = getPlayer(data, uid);
 
-  const unitPrice = config.store?.prices?.[resource] ?? 5;
+  const { unitPrice, label } = resolvePrice(resource);
   const totalPrice = unitPrice * amount;
 
   if (player.money < totalPrice)
-    return `❌ Not enough money. You need **${totalPrice} coins** to buy ${amount} ${resource}.`;
+    return `❌ Not enough money. You need **${totalPrice} coins** to buy ${amount} ${label}.`;
 
   player.money -= totalPrice;
   player.inventory[resource] = (player.inventory[resource] || 0) + amount;
   saveData(data);
 
-  return `🛒 You bought **${amount} ${resource}** for **${totalPrice} coins**.  
+  return `🛒 You bought **${amount} ${label}** for **${totalPrice} coins**.  
 💰 Remaining balance: ${player.money}.`;
 }
 
 // 💵 Sell resources to the village store
 function sell(uid, resource, amount) {
+  if (amount <= 0)
+    return "❌ Please specify an amount of at least 1 to sell.";
+
   const data = loadData();
   const player = getPlayer(data, uid);
 
@@ -73,14 +94,14 @@ function sell(uid, resource, amount) {
   if (have < amount)
     return `❌ You only have **${have} ${resource}** available to sell.`;
 
-  const unitPrice = config.store?.prices?.[resource] ?? 5;
+  const { unitPrice, label } = resolvePrice(resource);
   const totalPrice = unitPrice * amount;
 
   player.inventory[resource] -= amount;
   player.money = (player.money || 0) + totalPrice;
   saveData(data);
 
-  return `💵 You sold **${amount} ${resource}** for **${totalPrice} coins**.  
+  return `💵 You sold **${amount} ${label}** for **${totalPrice} coins**.  
 💰 New balance: ${player.money}.`;
 }
 

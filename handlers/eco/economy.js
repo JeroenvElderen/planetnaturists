@@ -1,7 +1,7 @@
 // handlers/eco/economy.js
 const { loadData, saveData } = require("./data");
 const { getPlayer } = require("./utils");
-const { findSeedByInvetoryItem } = require("./garden");
+const { findSeedByInventoryItem } = require("./garden");
 const config = require("../../config/ecoConfig");
 
 // 🌞 Earn random coins for naturist-friendly community tasks (limit: 5/hour)

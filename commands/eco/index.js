@@ -26,11 +26,6 @@ module.exports = {
       // 🕊️ STEP 3: Safe reply (no pings)
       await sendSilentReply(interaction, msg);
 
-      // ⏳ STEP 4: Optional cleanup
-      setTimeout(async () => {
-        try { await interaction.deleteReply(); } catch {}
-      }, 15000);
-
     } catch (err) {
       console.error("❌ Eco command error:", err);
       if (!interaction.replied && deferred) {

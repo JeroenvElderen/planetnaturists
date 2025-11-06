@@ -47,7 +47,15 @@ module.exports = new SlashCommandBuilder()
 
   // ⚒️ Crafting & Building
   .addSubcommand((sub) =>
-    sub.setName("combine").setDescription("Craft new materials")
+    sub
+      .setName("combine")
+      .setDescription("Craft new materials")
+      .addStringOption((o) =>
+        o
+          .setName("recipe")
+          .setDescription("Recipe key to craft")
+          .setRequired(true)
+      )
   )
   .addSubcommand((sub) =>
     sub.setName("recipes").setDescription("List crafting recipes")

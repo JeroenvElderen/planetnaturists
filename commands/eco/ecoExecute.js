@@ -37,13 +37,19 @@ async function executeEco(interaction) {
         break;
 
       // ⚒️ Crafting
-      case "combine":
+      case "combine": {
+        const recipeOption = interaction.options.getString("recipe");
+        if (!recipeOption) {
+          msg = "❌ Please specify a recipe to craft. Try `/eco recipes` for options.";
+          break;
+        }
         msg = eco.combine(
           user.id,
           user.username,
-          interaction.options.getString("recipe").toLowerCase()
+          recipeOption.toLowerCase()
         );
         break;
+      }
       case "recipes":
         msg = eco.recipesList();
         break;

@@ -13,6 +13,9 @@ const {
   computeRelaxOutcome,
 } = require("./environment");
 
+// 🌾 Base actions
+
+// Gather resources
 function gather(uid, username, client) {
   const data = loadData();
   ensureResources(data);
@@ -62,6 +65,7 @@ function gather(uid, username, client) {
   }! (Total: ${player.inventory[res.name]}) +${xpGain} XP${detail}`;
 }
 
+// Relax to increase calmness
 function relax(uid, username, client) {
   const data = loadData();
   const player = getPlayer(data, uid);
@@ -70,7 +74,7 @@ function relax(uid, username, client) {
   if (typeof player.xp !== "number") player.xp = 0;
 
   let calmGain = config.calmPerRelax;
-  const xpGain = config.xpPerRelax;
+  let xpGain = config.xpPerRelax; // ✅ changed from const → let
   const notes = [];
 
   const relaxOutcome = computeRelaxOutcome({
@@ -104,6 +108,7 @@ function relax(uid, username, client) {
   return `🧘 ${username} relaxes. +${calmGain} Calm, +${xpGain} XP 🌞${detail}${levelMessage}`;
 }
 
+// Village status
 function status() {
   const data = loadData();
   const resources = Object.entries(data.village.resources)
@@ -123,6 +128,7 @@ function status() {
   return `🏡 **EcoVillage Status**\nLevel: ${level} (XP: ${currentXp}/${nextRequirement})\nStorage Capacity: ${capacity}\nResources: ${resources}\nBuilt: ${built}\n💚 Calmness:${data.village.calmness}%`;
 }
 
+// Top helpers leaderboard
 function top() {
   const data = loadData();
   const players = Object.entries(data.players)

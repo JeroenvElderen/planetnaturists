@@ -134,11 +134,33 @@ client.on("interactionCreate", async (interaction) => {
     }
   } catch (err) {
     console.error("❌ Error handling interaction:", err);
-    if (!interaction.replied) {
-      await interaction.reply({
-        content: "⚠️ An error occurred while processing that interaction.",
-        ephemeral: true,
-      });
+     try {
+      if (interaction.isAutocomplete()) {
+        if (!interaction.responded) {
+          await interaction.respond([]);
+        }
+        return;
+      }
+
+      if (!interaction.isRepliable()) {
+        return;
+      }
+
+      if (interaction.deferred && !interaction.replied) {
+        await interaction.editReply({
+          content: "⚠️ An error occurred while processing that interaction.",
+        });
+        return;
+      }
+
+      if (!interaction.replied) {
+        await interaction.reply({
+          content: "⚠️ An error occurred while processing that interaction.",
+          ephemeral: true,
+        });
+      }
+    } catch (replyErr) {
+      console.error("⚠️ Failed to send error response:", replyErr);
     }
   }
 });

@@ -15,8 +15,12 @@ const {
 } = require("./handlers/videoVerifyHandler");
 
 // 🌴 Daily poll handlers
-const { postDailyWouldYouRather } = require("./handlers/dailyWouldYouRatherHandler");
-const { postDailyThisOrThat } = require("./handlers/dailyThisOrThatHandler");
+const {
+  initializeDailyWouldYouRather,
+} = require("./handlers/dailyWouldYouRatherHandler");
+const {
+  initializeDailyThisOrThat,
+} = require("./handlers/dailyThisOrThatHandler");
 
 // 🌿 EcoVillage Embed Updater
 const { scheduleVillageUpdates } = require("./handlers/villageUpdater");
@@ -69,8 +73,8 @@ client.once("ready", async () => {
   scheduleGardenNotifications(client);
 
   // 🌴 Kick off the daily polls (each handler self-schedules afterward)
-  await postDailyWouldYouRather(client);
-  await postDailyThisOrThat(client);
+  await initializeDailyWouldYouRather(client);
+  await initializeDailyThisOrThat(client);
 });
 
 // 🌴 Naturist Story Game

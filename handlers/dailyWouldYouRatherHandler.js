@@ -229,8 +229,10 @@ Keep it under 25 words.
   return { optionA, optionB };
 }
 
-async function postDailyWouldYouRather(client) {
-  ensureSchedule(client);
+async function postDailyWouldYouRather(client, { skipSchedule = false } = {}) {
+  if (!skipSchedule) {
+    ensureSchedule(client);
+  }
 
   const state = loadState();
   const today = formatDateInIrish();
@@ -303,4 +305,21 @@ async function postDailyWouldYouRather(client) {
   return true;
 }
 
-module.exports = { postDailyWouldYouRather };
+async function initializeDailyWouldYouRather(client) {
+  ensureSchedule(client);
+
+  const state = loadState();
+  const today = formatDateInIrish();
+
+  if (state.history[today]) {
+    console.log(
+      "📘 'Would You Rather' poll already posted for today; waiting for next scheduled run."
+    );
+  } else {
+    console.log(
+      "🕒 'Would You Rather' poll scheduled for 13:00 Europe/Dublin."
+    );
+  }
+}
+
+module.exports = { postDailyWouldYouRather, initializeDailyWouldYouRather };

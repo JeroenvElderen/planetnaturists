@@ -232,8 +232,10 @@ Keep it under 25 words.
   return { optionA, optionB };
 }
 
-async function postDailyThisOrThat(client) {
-  ensureSchedule(client);
+async function postDailyThisOrThat(client, { skipSchedule = false } = {}) {
+  if (!skipSchedule) {
+    ensureSchedule(client);
+  }
 
   const state = loadState();
   const today = formatDateInIrish();
@@ -306,4 +308,19 @@ async function postDailyThisOrThat(client) {
   return true;
 }
 
-module.exports = { postDailyThisOrThat };
+async function initializeDailyThisOrThat(client) {
+  ensureSchedule(client);
+
+  const state = loadState();
+  const today = formatDateInIrish();
+
+  if (state.history[today]) {
+    console.log(
+      "📘 'This or That' poll already posted for today; waiting for next scheduled run."
+    );
+  } else {
+    console.log("🕒 'This or That' poll scheduled for 13:00 Europe/Dublin.");
+  }
+}
+
+module.exports = { postDailyThisOrThat, initializeDailyThisOrThat };

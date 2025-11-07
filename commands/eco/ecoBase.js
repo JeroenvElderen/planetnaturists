@@ -55,6 +55,7 @@ module.exports = new SlashCommandBuilder()
           .setName("recipe")
           .setDescription("Recipe key to craft")
           .setRequired(true)
+          .setAutocomplete(true)
       )
   )
   .addSubcommand((sub) =>

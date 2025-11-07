@@ -93,6 +93,13 @@ client.on("channelUpdate", handleTicketUpdate);
 // 🎯 Handle all interactions (slash commands + buttons)
 client.on("interactionCreate", async (interaction) => {
   try {
+    if (interaction.isAutocomplete()) {
+      if (interaction.commandName === "eco" && typeof eco.autocomplete === "function") {
+        await eco.autocomplete(interaction);
+      }
+      return;
+    }
+
     if (interaction.isChatInputCommand()) {
       console.log(`⚙️ Slash command used: ${interaction.commandName}`);
 

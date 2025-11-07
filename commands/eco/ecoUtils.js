@@ -119,4 +119,4 @@ async function sendSilentReply(interaction, msg, delay = 15000) {
   }
 }
 
-module.exports = { ensureEcoChannel, sendSilentReply };
+module.exports = { ensureEcoChannel, sendSilentReply, ECO_CHANNEL_ID };

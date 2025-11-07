@@ -1,7 +1,10 @@
 // commands/eco/index.js
 const ecoCommand = require("./ecoBase");
 const { executeEco } = require("./ecoExecute");
-const { ensureEcoChannel, sendSilentReply } = require("./ecoUtils");
+const ecoUtils = require("./ecoUtils");
+const { recipeAutocompleteChoices } = require("../../handlers/eco/crafting");
+
+const { ensureEcoChannel, sendSilentReply } = ecoUtils;
 
 module.exports = {
   data: ecoCommand,
@@ -25,15 +28,54 @@ module.exports = {
 
       // 🕊️ STEP 3: Safe reply (no pings)
       await sendSilentReply(interaction, msg);
-
     } catch (err) {
       console.error("❌ Eco command error:", err);
       if (!interaction.replied && deferred) {
-        await interaction.editReply({
-          content: "⚠️ Error in EcoVillage command.",
-          allowedMentions: { parse: [] },
-        }).catch(() => {});
+        await interaction
+          .editReply({
+            content: "⚠️ Error in EcoVillage command.",
+            allowedMentions: { parse: [] },
+          })
+          .catch(() => {});
       }
+    }
+  },
+
+  async autocomplete(interaction) {
+    try {
+      if (
+        interaction.channelId &&
+        interaction.channelId !== ecoUtils.ECO_CHANNEL_ID
+      ) {
+        return interaction.respond([]);
+      }
+
+      let subcommand;
+      try {
+        subcommand = interaction.options.getSubcommand();
+      } catch (_) {
+        subcommand = null;
+      }
+
+      if (subcommand && subcommand !== "combine") {
+        return interaction.respond([]);
+      }
+
+      const focused = interaction.options.getFocused(true);
+      if (!focused || focused.name !== "recipe") {
+        return interaction.respond([]);
+      }
+
+      const choices = recipeAutocompleteChoices(focused.value);
+      return interaction.respond(choices);
+    } catch (err) {
+      console.warn("⚠️ Autocomplete for /eco failed:", err.message);
+      if (!interaction.responded) {
+        try {
+          await interaction.respond([]);
+        } catch (_) {}
+      }
+      return undefined;
     }
   },
 };

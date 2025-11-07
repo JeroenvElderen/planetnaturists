@@ -43,11 +43,7 @@ async function executeEco(interaction) {
           msg = "❌ Please specify a recipe to craft. Try `/eco recipes` for options.";
           break;
         }
-        msg = eco.combine(
-          user.id,
-          user.username,
-          recipeOption.toLowerCase()
-        );
+        msg = eco.combine(user.id, user.username, recipeOption);
         break;
       }
       case "recipes":
@@ -62,7 +58,7 @@ async function executeEco(interaction) {
         msg = eco.buildSpecific(
           user.id,
           user.username,
-          interaction.options.getString("name").toLowerCase(),
+          interaction.options.getString("name"),
           client
         );
         break;

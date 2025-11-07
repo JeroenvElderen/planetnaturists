@@ -1,6 +1,7 @@
 // commands/eco/ecoBase.js
 const { SlashCommandBuilder } = require("discord.js");
 const { seedChoices } = require("../../handlers/eco/garden");
+const { buildingChoices } = require("../../handlers/eco/buildings");
 
 module.exports = new SlashCommandBuilder()
   .setName("eco")
@@ -53,7 +54,7 @@ module.exports = new SlashCommandBuilder()
       .addStringOption((o) =>
         o
           .setName("recipe")
-          .setDescription("Recipe key to craft")
+          .setDescription("Recipe ID or key to craft")
           .setRequired(true)
           .setAutocomplete(true)
       )
@@ -69,7 +70,11 @@ module.exports = new SlashCommandBuilder()
       .setName("build")
       .setDescription("Help construct a chosen building")
       .addStringOption((o) =>
-        o.setName("name").setDescription("Building key").setRequired(true)
+        o
+          .setName("name")
+          .setDescription("Building ID or key")
+          .setRequired(true)
+          .addChoices(...buildingChoices)
       )
   )
 

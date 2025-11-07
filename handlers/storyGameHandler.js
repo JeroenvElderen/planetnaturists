@@ -5,14 +5,18 @@ const {
   MAX_HISTORY,
 } = require("../config/storyGame");
 
-const { readStory, writeStory } = require("../utils/githubStorage");
+const { readStory, writeStory } = require("../utils/storyStorage");
 
 let storyData = { story: [], lastUserId: null, storyMessageId: null };
 
-// 🧠 Load saved story on startup
-(async () => {
-  storyData = await readStory();
-})();
+async function initializeStoryGame() {
+  try {
+    storyData = await readStory();
+  } catch (err) {
+    console.error("⚠️ Failed to load story from Supabase:", err);
+    storyData = { story: [], lastUserId: null, storyMessageId: null };
+  }
+}
 
 let isProcessing = false;
 
@@ -100,7 +104,7 @@ module.exports = {
         storyData.storyMessageId = newMsg.id;
       }
 
-      // 💾 Save story to GitHub
+      // 💾 Save story to Supabase
       await writeStory(storyData);
       console.log(`🌴 Story updated by ${message.author.username}: "${content}"`);
     } catch (err) {
@@ -120,4 +124,5 @@ module.exports = {
     await writeStory(storyData);
     await message.channel.send("🧹 The naturist story has been reset! Start fresh 🌞");
   },
+  initializeStoryGame,
 };

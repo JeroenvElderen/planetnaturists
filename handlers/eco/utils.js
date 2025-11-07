@@ -1,100 +1,13 @@
 // handlers/eco/utils.js
-const fs = require("fs");
-const path = require("path");
+const { ensureVillageDefaults, getPlayer: baseGetPlayer } = require("./data");
 
-const DATA_PATH = path.join(__dirname, "../../data/ecoData.json");
-const { createEnvironmentState, ensureEnvironmentState } = require("./environment");
-
-function loadData() {
-  if (!fs.existsSync(DATA_PATH)) {
-    return {
-      village: {
-        level: 1,
-        xp: 0,
-        xpToNext: 50,
-        calmness: 50,
-        ...createEnvironmentState(Date.now()),
-        resources: {},
-        structures: {},
-        progress: {},
-        storage: { level: 1, capacity: 100 },
-        nextLevelRequirement: 100,
-        xpRemaining: 100,
-        metrics: {
-          totalDonations: 0,
-          unlockedBuildings: 5,
-          rareEvents: 0,
-          lastGrowthScore: 50,
-        },
-      },
-      players: {},
-    };
-  }
-
-  const data = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
-
-  // Ensure new fields exist for legacy saves.
-  if (!data.village) data.village = {};
-  const v = data.village;
-  if (typeof v.level !== "number") v.level = 1;
-  if (typeof v.xp !== "number") v.xp = 0;
-  if (typeof v.calmness !== "number") v.calmness = 50;
-  ensureEnvironmentState(v, Date.now());
-  if (!v.resources) v.resources = {};
-  if (!v.structures) v.structures = {};
-  if (!v.progress) v.progress = {};
-  const structureScore = Object.keys(v.structures || {}).length;
-  const currentGrowth =
-    (typeof v.calmness === "number" ? v.calmness : 50) +
-    structureScore +
-    (v.metrics?.totalDonations || 0);
-
-  if (!v.storage)
-    v.storage = { level: v.level, capacity: 100 + (v.level - 1) * 50 };
-  else {
-    v.storage.level = v.level;
-    v.storage.capacity = 100 + (v.level - 1) * 50;
-  }
-
-  if (!v.metrics)
-    v.metrics = {
-      totalDonations: 0,
-      unlockedBuildings: v.level * 5,
-      rareEvents: Math.max(0, v.level - 1),
-      lastGrowthScore: currentGrowth,
-    };
-  else {
-    if (typeof v.metrics.totalDonations !== "number")
-      v.metrics.totalDonations = 0;
-    v.metrics.unlockedBuildings = v.level * 5;
-    v.metrics.rareEvents = Math.max(0, v.level - 1);
-    if (typeof v.metrics.lastGrowthScore !== "number")
-      v.metrics.lastGrowthScore = currentGrowth;
-  }
-
-  if (typeof v.xpToNext !== "number") v.xpToNext = currentGrowth;
-  if (typeof v.nextLevelRequirement !== "number" || v.nextLevelRequirement <= 0)
-    v.nextLevelRequirement = v.level * 100;
-  if (typeof v.xpRemaining !== "number")
-    v.xpRemaining = Math.max(0, v.nextLevelRequirement - (v.xp || 0));
-
-  return data;
-}
-
-function saveData(data) {
-  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
+function ensureResources(data) {
+  ensureVillageDefaults(data);
+  if (!data.village.resources) data.village.resources = {};
 }
 
 function getPlayer(data, uid) {
-  if (!data.players[uid]) {
-   data.players[uid] = { inventory: {}, money: 0, calmness: 50, garden: [] };
-  }
-  if (!Array.isArray(data.players[uid].garden)) data.players[uid].garden = [];
-  return data.players[uid];
-}
-
-function ensureResources(data) {
-  if (!data.village.resources) data.village.resources = {};
+  return baseGetPlayer(data, uid);
 }
 
 function formatLevelUpSummary(village) {
@@ -181,8 +94,6 @@ function calculateVillageLevel(data) {
 }
 
 module.exports = {
-  loadData,
-  saveData,
   getPlayer,
   ensureResources,
   calculateVillageLevel,

@@ -1,9 +1,6 @@
 const eco = require("../../handlers/ecoHandler");
-const fs = require("fs");
-const path = require("path");
 const { refreshVillageEmbed } = require("../../handlers/villageUpdater");
-
-const DATA_PATH = path.join(__dirname, "../../handlers/eco/data.json");
+const { resetEcoData } = require("../../handlers/eco/data");
 const OWNER_IDS = ["946346329783803945"]; // 👈 your ID
 
 async function executeEco(interaction) {
@@ -160,36 +157,8 @@ async function handleReset(interaction, client) {
     return "🚫 You don’t have permission to reset the EcoVillage.";
   }
 
-  const now = Date.now();
-  const defaultData = {
-    players: {},
-    village: {
-      level: 1,
-      xp: 0,
-      calmness: 100,
-      weather: {
-        type: "Sunny",
-        nextChange: now + 4 * 60 * 60 * 1000,
-        changedAt: now,
-      },
-      season: "Spring",
-      seasonChangeAt: now + 24 * 60 * 60 * 1000,
-      seasonChangedAt: now,
-      time: "Day",
-      timeChangeAt: now + 6 * 60 * 60 * 1000,
-      timeChangedAt: now,
-      resources: {},
-      structures: {},
-      progress: {},
-      storage: {
-        level: 1,
-        capacity: 100,
-      },
-    },
-  };
-
   try {
-    fs.writeFileSync(DATA_PATH, JSON.stringify(defaultData, null, 2));
+    await resetEcoData();
     await refreshVillageEmbed(client);
     return "🌿 The **EcoVillage** has been completely reset. A new era begins 🌞";
   } catch (err) {

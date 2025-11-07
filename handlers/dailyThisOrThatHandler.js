@@ -1,15 +1,17 @@
 // handlers/dailyThisOrThatHandler.js
-const fs = require("fs");
-const path = require("path");
 const cron = require("node-cron");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { select, upsert, remove } = require("../utils/supabaseClient");
 
 const THIS_OR_THAT_CHANNEL_ID = "1434963096283250819";
-const STATE_PATH = path.join(__dirname, "../data/thisOrThatState.json");
 const TIMEZONE = "Europe/Dublin";
 const MAX_HISTORY_ENTRIES = 60;
+const STATE_ROW_ID = "main";
 
 let thisOrThatJob = null;
+let stateCache = { history: {}, lastPost: null };
+let stateLoaded = false;
+let loadingPromise = null;
 
 function formatDateInIrish(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -20,139 +22,142 @@ function formatDateInIrish(date = new Date()) {
   }).format(date);
 }
 
-function getLatestEntry(history) {
-  return Object.values(history || {}).reduce((latest, entry) => {
-    if (!entry) return latest;
-    if (!latest) return entry;
-    const currentPosted =
-      typeof entry.postedAt === "number"
-        ? entry.postedAt
-        : Number(entry.postedAt) || 0;
-    const latestPosted =
-      typeof latest.postedAt === "number"
-        ? latest.postedAt
-        : Number(latest.postedAt) || 0;
-    if (currentPosted > latestPosted) return entry;
-    if (currentPosted === latestPosted && entry.date > latest.date)
-      return entry;
-    return latest;
-  }, null);
+function normalizeEntry(entry) {
+  if (!entry) return null;
+  const postedAt =
+    typeof entry.postedAt === "number"
+      ? entry.postedAt
+      : Number(entry.postedAt) || Date.now();
+
+  return {
+    date: entry.date,
+    messageId: entry.messageId || null,
+    optionA: entry.optionA || null,
+    optionB: entry.optionB || null,
+    postedAt,
+  };
 }
 
-function ensureStateFile() {
-  if (fs.existsSync(STATE_PATH)) {
-    return;
-  }
-
-  const directory = path.dirname(STATE_PATH);
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
-  }
-
-  const emptyState = { history: {}, lastPost: null };
-  fs.writeFileSync(STATE_PATH, JSON.stringify(emptyState, null, 2));
-}
-
-function loadState() {
-  ensureStateFile();
-  const state = { history: {}, lastPost: null };
-
-  try {
-    const raw = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
-    if (raw && typeof raw === "object") {
-      if (raw.history && typeof raw.history === "object") {
-        for (const [date, entry] of Object.entries(raw.history)) {
-          if (!entry || typeof entry !== "object") continue;
-          state.history[date] = {
-            date,
-            messageId: entry.messageId || null,
-            optionA: entry.optionA || null,
-            optionB: entry.optionB || null,
-            postedAt:
-              typeof entry.postedAt === "number"
-                ? entry.postedAt
-                : Number(entry.postedAt) || Date.now(),
-          };
-        }
-      } else {
-        const timestamp =
-          typeof raw.lastPostedAt === "number"
-            ? raw.lastPostedAt
-            : Number(raw.lastPostedAt) || null;
-        if (timestamp) {
-          const date = formatDateInIrish(new Date(timestamp));
-          state.history[date] = {
-            date,
-            messageId: raw.lastMessageId || null,
-            optionA: raw.optionA || null,
-            optionB: raw.optionB || null,
-            postedAt: timestamp,
-          };
-        }
-      }
+function sortAndTrim(history) {
+  const entries = Object.values(history || {}).filter(Boolean);
+  entries.sort((a, b) => {
+    const aTime = typeof a.postedAt === "number" ? a.postedAt : Number(a.postedAt) || 0;
+    const bTime = typeof b.postedAt === "number" ? b.postedAt : Number(b.postedAt) || 0;
+    if (aTime === bTime) {
+      return (a.date || "").localeCompare(b.date || "");
     }
-  } catch (err) {
-    console.error(
-      "⚠️ Failed to read thisOrThatState.json, starting with empty state.",
-      err
-    );
-    return state;
+    return aTime - bTime;
+  });
+  return entries.slice(-MAX_HISTORY_ENTRIES);
+}
+
+async function loadStateFromSupabase() {
+  const [historyRows, stateRow] = await Promise.all([
+    select("this_or_that_history", {
+      columns: "date_key,message_id,option_a,option_b,posted_at",
+    }),
+    select("this_or_that_state", {
+      columns: "id,last_post_date,last_message_id,last_posted_at",
+      filter: { id: `eq.${STATE_ROW_ID}` },
+      single: true,
+    }),
+  ]);
+
+  const history = {};
+  for (const row of historyRows) {
+    if (!row.date_key) continue;
+    history[row.date_key] = normalizeEntry({
+      date: row.date_key,
+      messageId: row.message_id,
+      optionA: row.option_a,
+      optionB: row.option_b,
+      postedAt: row.posted_at,
+    });
   }
 
-  const latest = getLatestEntry(state.history);
-  state.lastPost = latest
+  const lastPost = stateRow?.last_post_date
     ? {
-        date: latest.date,
-        messageId: latest.messageId || null,
-        postedAt: latest.postedAt || null,
+        date: stateRow.last_post_date,
+        messageId: stateRow.last_message_id || null,
+        postedAt:
+          typeof stateRow.last_posted_at === "number"
+            ? stateRow.last_posted_at
+            : Number(stateRow.last_posted_at) || null,
       }
     : null;
 
-  return state;
+  return { history, lastPost };
 }
 
-function saveState(state) {
-  ensureStateFile();
-  const entries = Object.values(state.history || {}).filter(Boolean);
-  entries.sort((a, b) => {
-    const aTime =
-      typeof a.postedAt === "number" ? a.postedAt : Number(a.postedAt) || 0;
-    const bTime =
-      typeof b.postedAt === "number" ? b.postedAt : Number(b.postedAt) || 0;
-    return aTime - bTime;
-  });
-
-  const trimmed = entries.slice(-MAX_HISTORY_ENTRIES);
-  const history = {};
-  for (const entry of trimmed) {
-    history[entry.date] = {
-      date: entry.date,
-      messageId: entry.messageId || null,
-      optionA: entry.optionA || null,
-      optionB: entry.optionB || null,
-      postedAt:
-        typeof entry.postedAt === "number"
-          ? entry.postedAt
-          : Number(entry.postedAt) || Date.now(),
-    };
+async function ensureStateLoaded() {
+  if (stateLoaded) return stateCache;
+  if (!loadingPromise) {
+    loadingPromise = (async () => {
+      try {
+        return await loadStateFromSupabase();
+      } catch (err) {
+        console.error("⚠️ Failed to load 'This or That' state from Supabase:", err);
+        return { history: {}, lastPost: null };
+      }
+    })();
   }
 
-  const latest = trimmed.length ? trimmed[trimmed.length - 1] : null;
-  const payload = {
-    history,
+  stateCache = await loadingPromise;
+  stateLoaded = true;
+  loadingPromise = null;
+  return stateCache;
+}
+
+async function initializeThisOrThatState() {
+  await ensureStateLoaded();
+}
+
+async function getState() {
+  await ensureStateLoaded();
+  return stateCache;
+}
+
+async function persistState(state) {
+  const trimmedEntries = sortAndTrim(state.history);
+  const normalizedHistory = {};
+  for (const entry of trimmedEntries) {
+    if (!entry?.date) continue;
+    normalizedHistory[entry.date] = normalizeEntry(entry);
+  }
+
+  const historyPayload = trimmedEntries.map((entry) => ({
+    date_key: entry.date,
+    message_id: entry.messageId || null,
+    option_a: entry.optionA || null,
+    option_b: entry.optionB || null,
+    posted_at: entry.postedAt || null,
+  }));
+
+  await remove("this_or_that_history", { date_key: "not.is.null" });
+  if (historyPayload.length) {
+    await upsert("this_or_that_history", historyPayload);
+  }
+
+  const latest = trimmedEntries.length ? trimmedEntries[trimmedEntries.length - 1] : null;
+  await upsert("this_or_that_state", {
+    id: STATE_ROW_ID,
+    last_post_date: latest?.date || null,
+    last_message_id: latest?.messageId || null,
+    last_posted_at: latest?.postedAt || null,
+  });
+
+  stateCache = {
+    history: normalizedHistory,
     lastPost: latest
       ? {
           date: latest.date,
           messageId: latest.messageId || null,
-          postedAt:
-            typeof latest.postedAt === "number"
-              ? latest.postedAt
-              : Number(latest.postedAt) || null,
+          postedAt: latest.postedAt || null,
         }
       : null,
   };
 
-  fs.writeFileSync(STATE_PATH, JSON.stringify(payload, null, 2));
+  return stateCache;
 }
 
 function ensureSchedule(client) {
@@ -187,9 +192,7 @@ async function deletePreviousPollIfNeeded(channel, state, today) {
   }
 
   try {
-    const previousMessage = await channel.messages.fetch(
-      state.lastPost.messageId
-    );
+    const previousMessage = await channel.messages.fetch(state.lastPost.messageId);
     if (previousMessage) {
       await previousMessage.delete();
       console.log("🗑️ Deleted previous 'This or That' poll message.");
@@ -210,15 +213,10 @@ async function deletePreviousPollIfNeeded(channel, state, today) {
 
 async function generateThisOrThat() {
   const prompt = `
-You are a friendly naturist community game host.
-Write ONE short, fun, respectful "This or That" question
-for a naturist or nudist audience. It can involve nature, beaches, sports,
-relaxation, parks, or social settings — but must be wholesome and SFW.
-
-Format like:
-"This or that: [Option A] or [Option B]"
-Do NOT include greetings or intros.
-Keep it under 25 words.
+You are a naturist community host.
+Write ONE family-friendly "This or That" prompt focused on naturist themes (nature, relaxation, activities, travel, etc.).
+Format it exactly like "This or That: [Option A] vs [Option B]" without extra commentary.
+Keep it under 20 words.
 `;
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -226,7 +224,8 @@ Keep it under 25 words.
   const text = result.response.text().trim();
 
   const clean = text.replace(/^["']|["']$/g, "");
-  const parts = clean.replace(/^this or that[:\-]?\s*/i, "").split(/\s+or\s+/i);
+  const withoutPrefix = clean.replace(/^\s*this or that[:\-]?\s*/i, "");
+  const parts = withoutPrefix.split(/\s+vs\s+/i);
   const optionA = parts[0]?.replace(/\?$/, "").trim() || "Option A";
   const optionB = parts[1]?.replace(/\?$/, "").trim() || "Option B";
   return { optionA, optionB };
@@ -237,7 +236,7 @@ async function postDailyThisOrThat(client, { skipSchedule = false } = {}) {
     ensureSchedule(client);
   }
 
-  const state = loadState();
+  const state = await getState();
   const today = formatDateInIrish();
 
   if (state.history[today]) {
@@ -266,7 +265,7 @@ async function postDailyThisOrThat(client, { skipSchedule = false } = {}) {
   try {
     options = await generateThisOrThat();
   } catch (error) {
-    console.error("❌ Error generating 'This or That' poll options:", error);
+    console.error("❌ Error generating 'This or That' options:", error);
     return false;
   }
 
@@ -285,13 +284,13 @@ async function postDailyThisOrThat(client, { skipSchedule = false } = {}) {
     return false;
   }
 
-  const entry = {
+  const entry = normalizeEntry({
     date: today,
     messageId: message.id,
     optionA: options.optionA,
     optionB: options.optionB,
     postedAt: Date.now(),
-  };
+  });
 
   state.history[today] = entry;
   state.lastPost = {
@@ -300,7 +299,7 @@ async function postDailyThisOrThat(client, { skipSchedule = false } = {}) {
     postedAt: entry.postedAt,
   };
 
-  saveState(state);
+  await persistState(state);
 
   console.log(
     `✅ Posted new 'This or That' poll for ${today}: ${options.optionA} vs ${options.optionB}.`
@@ -309,9 +308,10 @@ async function postDailyThisOrThat(client, { skipSchedule = false } = {}) {
 }
 
 async function initializeDailyThisOrThat(client) {
+  await ensureStateLoaded();
   ensureSchedule(client);
 
-  const state = loadState();
+  const state = await getState();
   const today = formatDateInIrish();
 
   if (state.history[today]) {
@@ -323,4 +323,8 @@ async function initializeDailyThisOrThat(client) {
   }
 }
 
-module.exports = { postDailyThisOrThat, initializeDailyThisOrThat };
+module.exports = {
+  postDailyThisOrThat,
+  initializeDailyThisOrThat,
+  initializeThisOrThatState,
+};

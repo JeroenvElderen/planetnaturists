@@ -66,7 +66,7 @@ module.exports = {
       const focused = interaction.options.getFocused(true);
       if (!focused || focused.name !== "recipe") {
         await interaction.respond([]);
-        return;
+        return;g
       }
 
       const choices = recipeAutocompleteChoices(focused.value);

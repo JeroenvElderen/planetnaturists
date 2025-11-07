@@ -1,7 +1,10 @@
 // handlers/reactionHandler.js
-const { WELCOME_MESSAGES } = require("../data/welcomeMessages");
-const { CHANNEL_NAMES } = require("../data/channelNames");
-const { countries } = require("../data/countries");
+const {
+  getWelcomeMessages,
+  getChannelNames,
+  getEmojiRoleMap,
+  normalizeCountryKey,
+} = require("../services/communityDataCache");
 
 const MESSAGE_ID = "1429841307538423838";
 const CHANNEL_ID = "1429840375387914311";
@@ -19,7 +22,7 @@ function normalizeEmoji(reaction) {
 }
 
 // 🎯 Reaction added → assign role + create category/channels
-async function handleReactionAdd(reaction, user, emojiRoleMap) {
+async function handleReactionAdd(reaction, user) {
   if (user.bot) return;
   try {
     if (reaction.partial) await reaction.fetch();
@@ -28,6 +31,7 @@ async function handleReactionAdd(reaction, user, emojiRoleMap) {
     if (reaction.message.id !== MESSAGE_ID || reaction.message.channel.id !== CHANNEL_ID)
       return;
 
+    const emojiRoleMap = getEmojiRoleMap();
     const emoji = normalizeEmoji(reaction);
     const roleId = emojiRoleMap[emoji];
     if (!roleId) return;
@@ -59,9 +63,9 @@ async function handleReactionAdd(reaction, user, emojiRoleMap) {
         ],
       });
 
-      const localized =
-        CHANNEL_NAMES[role.name.replace(/[^\p{L}\s]/gu, "").trim()] ||
-        CHANNEL_NAMES.default;
+      const channelNames = getChannelNames();
+      const cleanRole = role.name.replace(/[^\p{L}\s]/gu, "").trim();
+      const localized = channelNames[cleanRole] || channelNames.default;
 
       const channels = [
         localized.chat,
@@ -82,9 +86,9 @@ async function handleReactionAdd(reaction, user, emojiRoleMap) {
         });
 
         if (chName === localized.chat) {
-          const cleanRoleName = role.name.replace(/[^\p{L}\s]/gu, "").trim();
-          const localeKey = cleanRoleName.replace(/\s+/g, "");
-          const welcome = WELCOME_MESSAGES[localeKey] || WELCOME_MESSAGES.default;
+          const welcomeMessages = getWelcomeMessages();
+          const localeKey = normalizeCountryKey(cleanRole);
+          const welcome = welcomeMessages[localeKey] || welcomeMessages.default;
           await channel.send({
             embeds: [
               {
@@ -105,7 +109,7 @@ async function handleReactionAdd(reaction, user, emojiRoleMap) {
 }
 
 // 🎯 Reaction removed → remove role & maybe delete channels
-async function handleReactionRemove(reaction, user, emojiRoleMap) {
+async function handleReactionRemove(reaction, user) {
   if (user.bot) return;
   try {
     if (reaction.partial) await reaction.fetch();
@@ -114,6 +118,7 @@ async function handleReactionRemove(reaction, user, emojiRoleMap) {
     if (reaction.message.id !== MESSAGE_ID || reaction.message.channel.id !== CHANNEL_ID)
       return;
 
+    const emojiRoleMap = getEmojiRoleMap();
     const emoji = normalizeEmoji(reaction);
     const roleId = emojiRoleMap[emoji];
     if (!roleId) return;

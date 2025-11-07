@@ -1,15 +1,17 @@
 // handlers/dailyWouldYouRatherHandler.js
-const fs = require("fs");
-const path = require("path");
 const cron = require("node-cron");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { select, upsert, remove } = require("../utils/supabaseClient");
 
 const WOULD_YOU_RATHER_CHANNEL_ID = "1434948784336535592";
-const STATE_PATH = path.join(__dirname, "../data/wouldYouRatherState.json");
 const TIMEZONE = "Europe/Dublin";
 const MAX_HISTORY_ENTRIES = 60;
+const STATE_ROW_ID = "main";
 
 let wouldYouRatherJob = null;
+let stateCache = { history: {}, lastPost: null };
+let stateLoaded = false;
+let loadingPromise = null;
 
 function formatDateInIrish(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
@@ -18,6 +20,22 @@ function formatDateInIrish(date = new Date()) {
     month: "2-digit",
     day: "2-digit",
   }).format(date);
+}
+
+function normalizeEntry(entry) {
+  if (!entry) return null;
+  const postedAt =
+    typeof entry.postedAt === "number"
+      ? entry.postedAt
+      : Number(entry.postedAt) || Date.now();
+
+  return {
+    date: entry.date,
+    messageId: entry.messageId || null,
+    optionA: entry.optionA || null,
+    optionB: entry.optionB || null,
+    postedAt,
+  };
 }
 
 function getLatestEntry(history) {
@@ -38,120 +56,126 @@ function getLatestEntry(history) {
   }, null);
 }
 
-function ensureStateFile() {
-  if (fs.existsSync(STATE_PATH)) {
-    return;
-  }
-
-  const directory = path.dirname(STATE_PATH);
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
-  }
-
-  const emptyState = { history: {}, lastPost: null };
-  fs.writeFileSync(STATE_PATH, JSON.stringify(emptyState, null, 2));
+function sortAndTrim(history) {
+  const entries = Object.values(history || {}).filter(Boolean);
+  entries.sort((a, b) => {
+    const aTime = typeof a.postedAt === "number" ? a.postedAt : Number(a.postedAt) || 0;
+    const bTime = typeof b.postedAt === "number" ? b.postedAt : Number(b.postedAt) || 0;
+    if (aTime === bTime) {
+      return (a.date || "").localeCompare(b.date || "");
+    }
+    return aTime - bTime;
+  });
+  return entries.slice(-MAX_HISTORY_ENTRIES);
 }
 
-function loadState() {
-  ensureStateFile();
-  const state = { history: {}, lastPost: null };
+async function loadStateFromSupabase() {
+  const [historyRows, stateRow] = await Promise.all([
+    select("would_you_rather_history", {
+      columns: "date_key,message_id,option_a,option_b,posted_at",
+    }),
+    select("would_you_rather_state", {
+      columns: "id,last_post_date,last_message_id,last_posted_at",
+      filter: { id: `eq.${STATE_ROW_ID}` },
+      single: true,
+    }),
+  ]);
 
-  try {
-    const raw = JSON.parse(fs.readFileSync(STATE_PATH, "utf8"));
-    if (raw && typeof raw === "object") {
-      if (raw.history && typeof raw.history === "object") {
-        for (const [date, entry] of Object.entries(raw.history)) {
-          if (!entry || typeof entry !== "object") continue;
-          state.history[date] = {
-            date,
-            messageId: entry.messageId || null,
-            optionA: entry.optionA || null,
-            optionB: entry.optionB || null,
-            postedAt:
-              typeof entry.postedAt === "number"
-                ? entry.postedAt
-                : Number(entry.postedAt) || Date.now(),
-          };
-        }
-      } else {
-        const timestamp =
-          typeof raw.lastPostedAt === "number"
-            ? raw.lastPostedAt
-            : Number(raw.lastPostedAt) || null;
-        if (timestamp) {
-          const date = formatDateInIrish(new Date(timestamp));
-          state.history[date] = {
-            date,
-            messageId: raw.lastMessageId || null,
-            optionA: raw.optionA || null,
-            optionB: raw.optionB || null,
-            postedAt: timestamp,
-          };
-        }
-      }
-    }
-  } catch (err) {
-    console.error(
-      "⚠️ Failed to read wouldYouRatherState.json, starting with empty state.",
-      err
-    );
-    return state;
+  const history = {};
+  for (const row of historyRows) {
+    if (!row.date_key) continue;
+    history[row.date_key] = normalizeEntry({
+      date: row.date_key,
+      messageId: row.message_id,
+      optionA: row.option_a,
+      optionB: row.option_b,
+      postedAt: row.posted_at,
+    });
   }
 
-  const latest = getLatestEntry(state.history);
-  state.lastPost = latest
+  const lastPost = stateRow?.last_post_date
     ? {
-        date: latest.date,
-        messageId: latest.messageId || null,
-        postedAt: latest.postedAt || null,
+        date: stateRow.last_post_date,
+        messageId: stateRow.last_message_id || null,
+        postedAt:
+          typeof stateRow.last_posted_at === "number"
+            ? stateRow.last_posted_at
+            : Number(stateRow.last_posted_at) || null,
       }
     : null;
 
-  return state;
+  return { history, lastPost };
 }
 
-function saveState(state) {
-  ensureStateFile();
-  const entries = Object.values(state.history || {}).filter(Boolean);
-  entries.sort((a, b) => {
-    const aTime =
-      typeof a.postedAt === "number" ? a.postedAt : Number(a.postedAt) || 0;
-    const bTime =
-      typeof b.postedAt === "number" ? b.postedAt : Number(b.postedAt) || 0;
-    return aTime - bTime;
-  });
-
-  const trimmed = entries.slice(-MAX_HISTORY_ENTRIES);
-  const history = {};
-  for (const entry of trimmed) {
-    history[entry.date] = {
-      date: entry.date,
-      messageId: entry.messageId || null,
-      optionA: entry.optionA || null,
-      optionB: entry.optionB || null,
-      postedAt:
-        typeof entry.postedAt === "number"
-          ? entry.postedAt
-          : Number(entry.postedAt) || Date.now(),
-    };
+async function ensureStateLoaded() {
+  if (stateLoaded) return stateCache;
+  if (!loadingPromise) {
+    loadingPromise = (async () => {
+      try {
+        return await loadStateFromSupabase();
+      } catch (err) {
+        console.error("⚠️ Failed to load 'Would You Rather' state from Supabase:", err);
+        return { history: {}, lastPost: null };
+      }
+    })();
   }
 
-  const latest = trimmed.length ? trimmed[trimmed.length - 1] : null;
-  const payload = {
-    history,
+  stateCache = await loadingPromise;
+  stateLoaded = true;
+  loadingPromise = null;
+  return stateCache;
+}
+
+async function initializeWouldYouRatherState() {
+  await ensureStateLoaded();
+}
+
+async function getState() {
+  await ensureStateLoaded();
+  return stateCache;
+}
+
+async function persistState(state) {
+  const trimmedEntries = sortAndTrim(state.history);
+  const normalizedHistory = {};
+  for (const entry of trimmedEntries) {
+    if (!entry?.date) continue;
+    normalizedHistory[entry.date] = normalizeEntry(entry);
+  }
+
+  const historyPayload = trimmedEntries.map((entry) => ({
+    date_key: entry.date,
+    message_id: entry.messageId || null,
+    option_a: entry.optionA || null,
+    option_b: entry.optionB || null,
+    posted_at: entry.postedAt || null,
+  }));
+
+  await remove("would_you_rather_history", { date_key: "not.is.null" });
+  if (historyPayload.length) {
+    await upsert("would_you_rather_history", historyPayload);
+  }
+
+  const latest = trimmedEntries.length ? trimmedEntries[trimmedEntries.length - 1] : null;
+  await upsert("would_you_rather_state", {
+    id: STATE_ROW_ID,
+    last_post_date: latest?.date || null,
+    last_message_id: latest?.messageId || null,
+    last_posted_at: latest?.postedAt || null,
+  });
+
+  stateCache = {
+    history: normalizedHistory,
     lastPost: latest
       ? {
           date: latest.date,
           messageId: latest.messageId || null,
-          postedAt:
-            typeof latest.postedAt === "number"
-              ? latest.postedAt
-              : Number(latest.postedAt) || null,
+          postedAt: latest.postedAt || null,
         }
       : null,
   };
 
-  fs.writeFileSync(STATE_PATH, JSON.stringify(payload, null, 2));
+  return stateCache;
 }
 
 function ensureSchedule(client) {
@@ -234,7 +258,7 @@ async function postDailyWouldYouRather(client, { skipSchedule = false } = {}) {
     ensureSchedule(client);
   }
 
-  const state = loadState();
+  const state = await getState();
   const today = formatDateInIrish();
 
   if (state.history[today]) {
@@ -282,13 +306,13 @@ async function postDailyWouldYouRather(client, { skipSchedule = false } = {}) {
     return false;
   }
 
-  const entry = {
+  const entry = normalizeEntry({
     date: today,
     messageId: message.id,
     optionA: options.optionA,
     optionB: options.optionB,
     postedAt: Date.now(),
-  };
+  });
 
   state.history[today] = entry;
   state.lastPost = {
@@ -297,7 +321,7 @@ async function postDailyWouldYouRather(client, { skipSchedule = false } = {}) {
     postedAt: entry.postedAt,
   };
 
-  saveState(state);
+  await persistState(state);
 
   console.log(
     `✅ Posted new 'Would You Rather' poll for ${today}: ${options.optionA} vs ${options.optionB}.`
@@ -306,9 +330,10 @@ async function postDailyWouldYouRather(client, { skipSchedule = false } = {}) {
 }
 
 async function initializeDailyWouldYouRather(client) {
+  await ensureStateLoaded();
   ensureSchedule(client);
 
-  const state = loadState();
+  const state = await getState();
   const today = formatDateInIrish();
 
   if (state.history[today]) {
@@ -316,10 +341,12 @@ async function initializeDailyWouldYouRather(client) {
       "📘 'Would You Rather' poll already posted for today; waiting for next scheduled run."
     );
   } else {
-    console.log(
-      "🕒 'Would You Rather' poll scheduled for 13:00 Europe/Dublin."
-    );
+    console.log("🕒 'Would You Rather' poll scheduled for 13:00 Europe/Dublin.");
   }
 }
 
-module.exports = { postDailyWouldYouRather, initializeDailyWouldYouRather };
+module.exports = {
+  postDailyWouldYouRather,
+  initializeDailyWouldYouRather,
+  initializeWouldYouRatherState,
+};

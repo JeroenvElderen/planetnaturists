@@ -1,5 +1,13 @@
-const { select, upsert, insert, remove } = require("../../utils/supabaseClient");
-const { createEnvironmentState, ensureEnvironmentState } = require("./environment");
+const {
+  select,
+  upsert,
+  insert,
+  remove,
+} = require("../../utils/supabaseClient");
+const {
+  createEnvironmentState,
+  ensureEnvironmentState,
+} = require("./environment");
 
 const ECO_VILLAGE_ID = "main";
 
@@ -60,7 +68,8 @@ function ensureVillageDefaults(data) {
       lastGrowthScore: currentGrowth,
     };
   else {
-    if (typeof v.metrics.totalDonations !== "number") v.metrics.totalDonations = 0;
+    if (typeof v.metrics.totalDonations !== "number")
+      v.metrics.totalDonations = 0;
     v.metrics.unlockedBuildings = v.level * 5;
     v.metrics.rareEvents = Math.max(0, v.level - 1);
     if (typeof v.metrics.lastGrowthScore !== "number")
@@ -82,24 +91,26 @@ function ensureVillageDefaults(data) {
 }
 
 async function loadEcoDataFromSupabase() {
-  const [villageRow, playerRows, inventoryRows, gardenRows, gatherRows] = await Promise.all([
-    select("eco_village", {
-      columns:
-        "id,level,xp,xp_to_next,next_level_requirement,xp_remaining,calmness,weather,season,season_change_at,season_changed_at,time,time_change_at,time_changed_at,resources,structures,progress,storage_level,storage_capacity,metrics",
-      filter: { id: `eq.${ECO_VILLAGE_ID}` },
-      single: true,
-    }),
-    select("eco_players", { columns: "player_id,xp,calm,money" }),
-    select("eco_player_inventory", {
-      columns: "player_id,item_name,quantity",
-    }),
-    select("eco_player_garden", {
-      columns: "plot_id,player_id,seed,planted_at,growth_time,notified_stages",
-    }),
-    select("eco_player_gathers", {
-      columns: "player_id,gathered_at",
-    }),
-  ]);
+  const [villageRow, playerRows, inventoryRows, gardenRows, gatherRows] =
+    await Promise.all([
+      select("eco_village", {
+        columns:
+          "id,level,xp,xp_to_next,next_level_requirement,xp_remaining,calmness,weather,season,season_change_at,season_changed_at,time,time_change_at,time_changed_at,resources,structures,progress,storage_level,storage_capacity,metrics",
+        filter: { id: `eq.${ECO_VILLAGE_ID}` },
+        single: true,
+      }),
+      select("eco_players", { columns: "player_id,xp,calm,money" }),
+      select("eco_player_inventory", {
+        columns: "player_id,item_name,quantity",
+      }),
+      select("eco_player_garden", {
+        columns:
+          "plot_id,player_id,seed,planted_at,growth_time,notified_stages",
+      }),
+      select("eco_player_gathers", {
+        columns: "player_id,gathered_at",
+      }),
+    ]);
 
   let needsSeed = false;
   let village;
@@ -113,7 +124,8 @@ async function loadEcoDataFromSupabase() {
       level: villageRow.level ?? 1,
       xp: villageRow.xp ?? 0,
       xpToNext: villageRow.xp_to_next ?? 0,
-      nextLevelRequirement: villageRow.next_level_requirement ?? villageRow.level * 100,
+      nextLevelRequirement:
+        villageRow.next_level_requirement ?? villageRow.level * 100,
       xpRemaining: villageRow.xp_remaining ?? 0,
       calmness: villageRow.calmness ?? 50,
       weather: villageRow.weather || null,
@@ -207,7 +219,9 @@ async function initializeEcoData() {
 
 function loadData() {
   if (!dataCache) {
-    throw new Error("Eco data not initialized. Call initializeEcoData() first.");
+    throw new Error(
+      "Eco data not initialized. Call initializeEcoData() first."
+    );
   }
   return dataCache;
 }
@@ -275,7 +289,7 @@ async function persistEcoData(data) {
       calm: player.calm ?? 0,
       money: player.money ?? 0,
     }));
-    await insert("eco_players", playerRows);
+    await upsert("eco_players", playerRows);
 
     const inventoryRows = [];
     const gardenRows = [];
@@ -308,9 +322,10 @@ async function persistEcoData(data) {
       }
     }
 
-    if (inventoryRows.length) await insert("eco_player_inventory", inventoryRows);
-    if (gardenRows.length) await insert("eco_player_garden", gardenRows);
-    if (gatherRows.length) await insert("eco_player_gathers", gatherRows);
+    if (inventoryRows.length)
+      await upsert("eco_player_inventory", inventoryRows);
+    if (gardenRows.length) await upsert("eco_player_garden", gardenRows);
+    if (gatherRows.length) await upsert("eco_player_gathers", gatherRows);
   }
 }
 

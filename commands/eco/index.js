@@ -47,7 +47,8 @@ module.exports = {
         interaction.channelId &&
         interaction.channelId !== ecoUtils.ECO_CHANNEL_ID
       ) {
-        return interaction.respond([]);
+        await interaction.respond([]);
+        return;
       }
 
       let subcommand;
@@ -58,12 +59,14 @@ module.exports = {
       }
 
       if (subcommand && subcommand !== "combine") {
-        return interaction.respond([]);
+        await interaction.respond([]);
+        return;
       }
 
       const focused = interaction.options.getFocused(true);
       if (!focused || focused.name !== "recipe") {
-        return interaction.respond([]);
+        await interaction.respond([]);
+        return;
       }
 
       const choices = recipeAutocompleteChoices(focused.value);

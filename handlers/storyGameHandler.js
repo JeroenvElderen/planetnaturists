@@ -7,6 +7,8 @@ const {
 
 const { readStory, writeStory } = require("../utils/storyStorage");
 
+const shouldTrimHistory = Number.isFinite(MAX_HISTORY) && MAX_HISTORY > 0;
+
 let storyData = { story: [], lastUserId: null, storyMessageId: null };
 
 async function initializeStoryGame() {
@@ -57,7 +59,7 @@ module.exports = {
 
       // ✅ Add to story
       storyData.story.push(...words);
-      if (storyData.story.length > MAX_HISTORY) {
+      if (shouldTrimHistory && storyData.story.length > MAX_HISTORY) {
         storyData.story = storyData.story.slice(-MAX_HISTORY);
       }
 

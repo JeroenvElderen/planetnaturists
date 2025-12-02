@@ -7,14 +7,17 @@ const {
 } = process.env;
 
 const SUPABASE_KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+const isConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  throw new Error(
-    'Supabase configuration missing. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY.'
+if (!isConfigured) {
+  console.warn(
+    '⚠️  Supabase configuration missing. Running in offline mode with empty data.'
   );
 }
 
-const BASE_URL = `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1`;
+const BASE_URL = SUPABASE_URL
+  ? `${SUPABASE_URL.replace(/\/$/, '')}/rest/v1`
+  : null;
 
 function buildQuery(params = {}) {
   const search = new URLSearchParams();
@@ -26,6 +29,10 @@ function buildQuery(params = {}) {
 }
 
 async function supabaseFetch(path, { method = 'GET', headers = {}, body, prefer } = {}) {
+  if (!isConfigured) {
+    throw new Error('Supabase is not configured.');
+  }
+
   const url = `${BASE_URL}/${path}`;
   const finalHeaders = {
     apikey: SUPABASE_KEY,
@@ -44,11 +51,16 @@ async function supabaseFetch(path, { method = 'GET', headers = {}, body, prefer 
     payload = JSON.stringify(body);
   }
 
-  const response = await fetch(url, {
-    method,
-    headers: finalHeaders,
-    body: payload,
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method,
+      headers: finalHeaders,
+      body: payload,
+    });
+  } catch (err) {
+    throw new Error(`Supabase request failed to fetch ${url}: ${err.message}`);
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

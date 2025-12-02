@@ -98,18 +98,20 @@ async function loadEcoDataFromSupabase() {
           "id,level,xp,xp_to_next,next_level_requirement,xp_remaining,calmness,weather,season,season_change_at,season_changed_at,time,time_change_at,time_changed_at,resources,structures,progress,storage_level,storage_capacity,metrics",
         filter: { id: `eq.${ECO_VILLAGE_ID}` },
         single: true,
-      }),
-      select("eco_players", { columns: "player_id,xp,calm,money" }),
+      }).catch(() => null),
+      select("eco_players", { columns: "player_id,xp,calm,money" }).catch(
+        () => []
+      ),
       select("eco_player_inventory", {
         columns: "player_id,item_name,quantity",
-      }),
+      }).catch(() => []),
       select("eco_player_garden", {
         columns:
           "plot_id,player_id,seed,planted_at,growth_time,notified_stages",
-      }),
+      }).catch(() => []),
       select("eco_player_gathers", {
         columns: "player_id,gathered_at",
-      }),
+      }).catch(() => []),
     ]);
 
   let needsSeed = false;
@@ -205,10 +207,19 @@ async function initializeEcoData() {
   if (dataCache) return dataCache;
   if (!initializationPromise) {
     initializationPromise = (async () => {
-      const { data, needsSeed } = await loadEcoDataFromSupabase();
-      dataCache = data;
-      if (needsSeed) {
-        await persistEcoData(data);
+      try {
+        const { data, needsSeed } = await loadEcoDataFromSupabase();
+        dataCache = data;
+        if (needsSeed) {
+          await persistEcoData(data);
+        }
+      } catch (err) {
+        console.warn(
+          "⚠️  Failed to load Eco data from Supabase. Using default offline data.",
+          err
+        );
+        dataCache = createDefaultData();
+        ensureVillageDefaults(dataCache);
       }
       return dataCache;
     })();

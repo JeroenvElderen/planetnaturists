@@ -13,17 +13,30 @@ function normalizeCountryKey(name) {
 }
 
 async function loadCommunityData() {
-  const [countryRows, aliasRows, channelRows, welcomeRows, emojiRows] = await Promise.all([
-    select('countries', { columns: 'emoji,name' }),
-    select('country_aliases', { columns: 'alias,emoji' }),
-    select('channel_names', {
-      columns: 'country_name,chat,locations,offtopic,experiences',
-    }),
-    select('welcome_messages', {
-      columns: 'country_key,language,message',
-    }),
-    select('emoji_role_map', { columns: 'emoji,role_id' }),
-  ]);
+  let countryRows = [];
+  let aliasRows = [];
+  let channelRows = [];
+  let welcomeRows = [];
+  let emojiRows = [];
+
+  try {
+    [countryRows, aliasRows, channelRows, welcomeRows, emojiRows] = await Promise.all([
+      select('countries', { columns: 'emoji,name' }),
+      select('country_aliases', { columns: 'alias,emoji' }),
+      select('channel_names', {
+        columns: 'country_name,chat,locations,offtopic,experiences',
+      }),
+      select('welcome_messages', {
+        columns: 'country_key,language,message',
+      }),
+      select('emoji_role_map', { columns: 'emoji,role_id' }),
+    ]);
+  } catch (err) {
+    console.warn(
+      '⚠️  Failed to load community data from Supabase. Falling back to empty defaults.',
+      err
+    );
+  }
 
   const countryMap = {};
   const entries = [];
